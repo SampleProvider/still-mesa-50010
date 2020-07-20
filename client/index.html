@@ -1,0 +1,759 @@
+<div id="signDiv">
+	<h1>Maitian Game Snapshot 0731a</h1>
+	<br><br>
+	Username: <input id="signDiv-username" type="text"></input><br>
+	Password: <input id="signDiv-password" type="password"></input><br>
+	<button id="signDiv-signIn">Sign In</button>
+	<button id="signDiv-createAccount">Create an Account</button>
+	<button id="signDiv-deleteAccount">Delete an Account</button><br>
+	
+	<br><br><br>
+	<h2>Changelog:</h2><br>
+	<p>Fixed Update/Packaging glitch<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p>
+</div>
+
+<div id="signError" style="display:none;">
+	<p style="color:red">Click <a href="https://forms.gle/q4toA7ECpKPhsje27">this</a> to win!</p>
+</div>
+
+<div id="gameDiv" style="display:none;">
+	
+	<div id="game" style="position:absolute;top:0px;left:0px">
+		
+		<canvas id="ctx" width="screen.width" height="screen.height" style="position:absolute;left:0px;top:0px;right:0px;bottom:110px;border:0px solid #000000;"></canvas>
+		
+		<div id="ui" style="position:absolute;width:500px;height:500px">
+			<button onclick="changeMap()" style="position:absolute;height:40px;width:55px;top:0px;left:0px">Change Mode</button>
+		</div>
+	</div>
+	<div id="belowGame" style="position:absolute;left:0px;top:0px">
+		<div id="inventory" style="position:absolute;top:40px;width:55"></div>
+		<div id="chat-text" style="position:absolute;left:0px;width:500px;height:100px;overflow-y:scroll">
+			<div>Hello!</div>
+		</div>
+
+		
+		<form id="chat-form" autocomplete="off"	>
+			<input id="chat-input" type="text" style="position:absolute;left:0px;width:500px;height:25px;border:2px solid #000000;"></input>
+		</form>
+	</div>
+	<!--<canvas id="ctxmap" width="300" height="200" style="border:1px solid #000000;"></canvas>-->
+	
+</div>
+
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+
+<!--<script src="/client/socket.js"></script>-->
+<script src="/client/Inventory.js"></script>
+
+<script>
+	
+	
+	
+	var WIDTH = 6000;
+	var HEIGHT = 4000;
+	var CANVASWIDTH = window.innerWidth;
+	var CANVASHEIGHT = window.innerHeight;
+	var MAPHEIGHT = 210;
+	var MAPWIDTH = 310;
+	
+	var socket = io();
+	
+	socket.emit('canvasSize',{width:WIDTH,height:HEIGHT,canvaswidth:CANVASWIDTH,canvasheight:CANVASHEIGHT});
+	//chat
+
+	{
+	
+	var scroll = 0;
+	var signDiv = document.getElementById('signDiv');
+	var signDivUsername = document.getElementById('signDiv-username');
+	var signDivSignIn = document.getElementById('signDiv-signIn');
+	var signDivCreateAccount = document.getElementById('signDiv-createAccount');
+	var signDivDeleteAccount = document.getElementById('signDiv-deleteAccount');
+	var signDivPassword = document.getElementById('signDiv-password');
+	var SignError = document.getElementById('signError');
+	
+	signDivSignIn.onclick = function(){
+		socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
+		console.log('sign in');
+	}
+	signDivCreateAccount.onclick = function(){
+		socket.emit('createAccount',{username:signDivUsername.value,password:signDivPassword.value});
+	}
+	signDivDeleteAccount.onclick = function(){
+		socket.emit('deleteAccount',{username:signDivUsername.value});
+	}
+	socket.on('signInResponse',function(data){
+		if(data.success == 2){
+			signDiv.style.display = 'none';
+			gameDiv.style.display = 'inline-block';
+			signError.style.display = 'none';
+		}
+		else if(data.success == 1){
+			alert("The account with username \'" + signDivUsername.value + "\' and password \'" + signDivPassword.value + "\' is already used. Please disconnect the other account to use this one.");
+			signError.style.display = 'inline-block';
+		}
+		else{
+			alert("No account found with username \'" + signDivUsername.value + "\' and password \'" + signDivPassword.value + "\'.");
+			signError.style.display = 'inline-block';
+		}
+	});
+	socket.on('createAccountResponse',function(data){
+		if(data.success){
+			alert("Account created with username \'" + signDivUsername.value + "\' and password \'" + signDivPassword.value + "\'.");
+		}
+		else
+			alert("Sorry, there is already an account with username \'" + signDivUsername.value + "\'.");
+	});
+	socket.on('deleteAccountResponse',function(data){
+		if(data.success){
+			alert("Deleted account created with username \'" + signDivUsername.value + "\'.");
+		}
+		else
+			alert("Sorry, there is no account with username \'" + signDivUsername.value + "\'.");
+	});
+	
+	var chatText = document.getElementById('chat-text');
+	var chatInput = document.getElementById('chat-input');
+	var chatForm = document.getElementById('chat-form');	
+	chatText.style.top = window.innerHeight - 135;
+	chatForm.style.top = window.innerHeight - 50;
+	chatInput.style.top = window.innerHeight - 50;
+	
+
+	socket.on('addToChat',function(data){
+		chatText.innerHTML += '<div>' + data + '</div>';
+	});
+	
+	socket.on('evalAnswer',function(data){
+		console.log(data);
+	});
+	
+	chatForm.onsubmit = function(e){
+		e.preventDefault();
+		if(chatInput.value[0] === '/')
+			socket.emit('evalServer',chatInput.value.slice(1));
+		//else if(chatInput.value[0] === '@'){
+			//socket.emit('sendPmToServer',{
+				//username:chatInput.value.slice(1,chatInput.value.indexOf(',')),
+				//message:chatInput.value.slice(chatInput.value.indexOf(',') + 1),
+			//});
+		//}
+		else
+			socket.emit('sendMsgToServer',chatInput.value);
+		chatInput.value = '';
+	}
+	
+	}
+	//UI
+	
+	var changeMap = function(){
+		socket.emit('changeMap');
+	}
+
+	//game
+
+	var Img = {};
+
+	Img.arrow = new Image();
+	Img.arrow.src = '/client/img/b.png';
+	Img.player = new Image();
+	Img.player.src = '/client/img/d.png';
+
+	var ctx = document.getElementById("ctx").getContext("2d");
+    ctx.canvas.width  = window.innerWidth;
+    ctx.canvas.height = window.innerHeight - 110;
+	
+
+	var inventory = new Inventory(socket,false);
+	socket.on('updateInventory',function(items){
+		inventory.items = items;
+		inventory.refreshRender();
+	});
+
+
+	var Player = function(initPack){
+		var self = {};
+		self.id = initPack.id;
+		self.username = initPack.username;
+		self.x = initPack.x;
+		self.y = initPack.y;
+		self.direction = initPack.direction;
+		self.color = initPack.color;
+		self.hp = initPack.hp;
+		self.hpMax = initPack.hpMax;
+		self.score = initPack.score;
+		self.map = initPack.map;
+		self.reload = 10;
+		self.doDraw = 0;
+		
+		self.draw = function(){
+			if(Player.list[selfId].map !== self.map)
+				return;
+			if(self.doDraw < 0)
+				return;
+			var hpWidth = 50 * self.hp / self.hpMax;
+			var reload = 0;
+			if(self.reload > 10){
+				reload = 10;
+			}
+			else if(self.reload < 0){
+				reload = 0;
+			}
+			else{
+				reload = self.reload;
+			}
+			
+			var x = CANVASWIDTH/2 + self.x - Player.list[selfId].x;
+			var y = CANVASHEIGHT/2 + self.y - Player.list[selfId].y;
+
+			var colorFill = "";
+			var colorStroke = "";
+			if(self.map === 1){
+				if(Player.list[selfId] === self){
+					colorFill = '#0088EE';
+				}
+				else{
+					colorFill = '#F14E54';
+				}
+			}
+			else{
+				switch(self.color){
+					case 'red' :{
+						colorFill = '#F14E54';
+					}
+					case 'blue' :{
+						colorFill = '#0088EE';
+					}
+				}
+			}
+			if(self.map === 1){
+				if(Player.list[selfId] === self){
+					colorStroke = '#0085A8';
+				}
+				else{
+					colorStroke = '#B43A3F';
+				}
+			}
+			else{
+				switch(self.color){
+					case 'red' :{
+						colorStroke = '#B43A3F';
+					}
+					case 'blue' :{
+						colorStroke = '#0085A8';
+					}
+				}
+			}
+			colorStroke = '#333333';
+			ctx.translate(x,y);
+			ctx.rotate(self.direction * Math.PI / 180);
+		
+			//Player
+			ctx.fillStyle = colorFill;
+			ctx.beginPath();
+			ctx.arc(0, 0, 18, 0, 2 * Math.PI);
+			ctx.fill();
+			ctx.lineWidth = 3;
+			ctx.strokeStyle = colorStroke;
+			ctx.stroke();
+			//bow
+			ctx.beginPath();
+			ctx.arc(-10, 0, 50, -1/3 * Math.PI, 1/3 * Math.PI);
+			ctx.lineWidth = 3;
+			ctx.strokeStyle = '#752500';
+			ctx.stroke();
+
+			ctx.beginPath();
+			ctx.moveTo(15,25 * Math.sqrt(3));
+			ctx.lineTo(15 - reload * 3,0);
+			ctx.moveTo(15,-25 * Math.sqrt(3));
+			ctx.lineTo(15 - reload * 3,0);
+			ctx.lineWidth = 3;
+			ctx.stroke();
+			
+			if(reload > 5){
+				ctx.translate(23 - reload * 3,0);
+				ctx.fillStyle = colorFill;
+				ctx.beginPath();
+				ctx.lineWidth = 2;
+				ctx.strokeStyle = '#333333';
+				ctx.moveTo(50,0);
+				ctx.lineTo(0,0);
+
+				ctx.moveTo(0,-5);
+				ctx.lineTo(10,0);
+				ctx.lineTo(0,5);
+
+				ctx.moveTo(-5,-5);
+				ctx.lineTo(5,0);
+				ctx.lineTo(-5,5);
+
+				ctx.stroke();
+				ctx.beginPath();
+
+				ctx.moveTo(61,0);
+				ctx.lineTo(50,-5);
+				ctx.lineTo(50,5);
+				ctx.lineTo(61,0);
+				
+				ctx.fill();
+				ctx.stroke();
+				
+				ctx.translate(- 23 + reload * 3,0);
+			}
+			
+			
+			//ctx.drawImage(Img.player,-30,-30);
+			
+			ctx.rotate(self.direction * Math.PI / -180);
+			//hp bar
+			ctx.fillStyle = 'gray';
+			ctx.fillRect(-27,-72,54,11);
+			ctx.fillStyle = colorFill;
+			ctx.fillRect(-25,-70,hpWidth,7);
+
+			ctx.translate(-x,-y);
+			
+			self.doDraw -= 1;
+		}
+		
+		self.drawName = function(){
+			if(Player.list[selfId].map !== self.map)
+				return;
+			var x = CANVASWIDTH/2 + self.x - Player.list[selfId].x;
+			var y = CANVASHEIGHT/2 + self.y - Player.list[selfId].y;
+			
+			ctx.font = "20px Ubuntu";
+			ctx.fillStyle = 'black';
+			ctx.fillText(self.username,x - 30,y - 40);
+		}
+		
+		Player.list[self.id] = self;
+		return self;
+	}
+	Player.list = {};
+	
+	var Arrow = function(initPack){
+		var self = {};
+		self.id = initPack.id;
+		self.x = initPack.x;
+		self.y = initPack.y;
+		self.direction = initPack.direction;
+		self.color = initPack.color;
+		self.timer = 40;
+		self.map = initPack.map;
+		self.parent = initPack.parent;
+		self.doDraw = 0;
+
+		self.draw = function(){
+			if(Player.list[selfId].map !== self.map)
+				return;
+			if(self.doDraw < 0)
+				return;
+			var width = self.x - Player.list[selfId].x + CANVASWIDTH/2;
+			var height = self.y - Player.list[selfId].y + CANVASHEIGHT/2;
+			
+			
+			var colorFill = "";
+			var colorStroke = "";
+			if(self.map === 1){
+				if(selfId === self.parent){
+					colorFill = '#0088EE';
+				}
+				else{
+					colorFill = '#F14E54';
+				}
+			}
+			else{
+				switch(self.color){
+					case 'red' :{
+						colorFill = '#F14E54';
+					}
+					case 'blue' :{
+						colorFill = '#0088EE';
+					}
+				}
+			}
+			if(self.map === 1){
+				if(selfId === self.parent){
+					colorStroke = '#0085A8';
+				}
+				else{
+					colorStroke = '#B43A3F';
+				}
+			}
+			else{
+				switch(self.color){
+					case 'red' :{
+						colorStroke = '#B43A3F';
+					}
+					case 'blue' :{
+						colorStroke = '#0085A8';
+					}
+				}
+			}
+			ctx.translate(width,height);
+			ctx.rotate(self.direction * Math.PI / 180);
+			
+			//ctx.drawImage(Img.arrow,0,0);
+			ctx.fillStyle = colorFill;
+			ctx.beginPath();
+			ctx.lineWidth = 2;
+			ctx.strokeStyle = '#333333';
+			ctx.moveTo(50,0);
+			ctx.lineTo(0,0);
+
+			ctx.moveTo(0,-5);
+			ctx.lineTo(10,0);
+			ctx.lineTo(0,5);
+
+			ctx.moveTo(-5,-5);
+			ctx.lineTo(5,0);
+			ctx.lineTo(-5,5);
+
+			ctx.stroke();
+			ctx.beginPath();
+
+			ctx.moveTo(61,0);
+			ctx.lineTo(50,-5);
+			ctx.lineTo(50,5);
+			ctx.lineTo(61,0);
+
+			ctx.fill();
+			ctx.stroke();
+			ctx.rotate(self.direction * Math.PI / -180);
+			ctx.translate(-width,-height);
+			
+			self.doDraw -= 1;
+		}
+		
+		Arrow.list[self.id] = self;
+		return self;
+	}
+	Arrow.list = {};
+	
+	var Shape = function(initPack){
+		var self = {};
+		self.id = initPack.id;
+		self.x = initPack.x;
+		self.y = initPack.y;
+		self.direction = initPack.direction;
+		self.map = initPack.map;
+		self.color = initPack.color;
+		self.shapeSize = initPack.shapeSize;
+		self.doDraw = 0;
+		if(self.shapeSize === 0){
+			self.hp = 10;
+			self.hpMax = 10;
+			self.radius = 30;
+		}
+		else if(self.shapeSize === 1){
+			self.hp = 50;
+			self.hpMax = 50;
+			self.radius = 60;
+		}
+		else if(self.shapeSize === 2){
+			self.hp = 500;
+			self.hpMax = 500;
+			self.radius = 120;
+		}
+		self.draw = function(){
+			
+			if(Player.list[selfId].map !== self.map)
+				return;
+			if(self.doDraw < 0)
+				return;
+			
+			var hpWidth = self.radius * self.hp / self.hpMax;
+			var width = self.x - Player.list[selfId].x + CANVASWIDTH/2;
+			var height = self.y - Player.list[selfId].y + CANVASHEIGHT/2;
+			
+			ctx.translate(width,height);
+			ctx.rotate(self.direction * Math.PI / 180);
+			
+			ctx.fillStyle = '#790000';
+			ctx.fillRect(-self.radius / 2 + 3,-self.radius / 2 + 3,self.radius - 6,self.radius - 6);
+			ctx.fillStyle = '#790000';
+			ctx.fillRect(-self.radius / 2,-self.radius / 2,3,self.radius);
+			ctx.fillRect(-self.radius / 2,-self.radius / 2,self.radius,3);
+			ctx.fillRect(self.radius / 2 - 3,-self.radius / 2 + 3,3,self.radius - 3);
+			ctx.fillRect(-self.radius / 2 + 3,self.radius / 2 - 3,self.radius - 3,3);
+			ctx.rotate(self.direction * Math.PI / -180);
+			if(self.shapeSize === 0){
+				ctx.fillStyle = 'gray';
+				ctx.fillRect(-17,-42,34,11);
+				ctx.fillStyle = 'red';
+				ctx.fillRect(-15,-40,hpWidth,7);
+			}
+			else if(self.shapeSize === 1){
+				ctx.fillStyle = 'gray';
+				ctx.fillRect(-32,-72,64,11);
+				ctx.fillStyle = 'red';
+				ctx.fillRect(-30,-70,hpWidth,7);
+			}
+			else if(self.shapeSize === 2){
+				ctx.fillStyle = 'gray';
+				ctx.fillRect(-62,-112,124,11);
+				ctx.fillStyle = 'red';
+				ctx.fillRect(-60,-110,hpWidth,7);
+			}
+			ctx.translate(-width,-height);
+			
+			self.doDraw -= 1;
+		}
+		
+		Shape.list[self.id] = self;
+		return self;
+	}
+	Shape.list = {};
+	
+	var selfId = null;
+	
+	socket.on('init',function(data){
+		if(data.selfId){
+			selfId = data.selfId;
+		}
+		for(var i = 0;i < data.player.length;i++){
+			new Player(data.player[i]);
+		}
+		for(var i = 0;i < data.arrow.length;i++){
+			new Arrow(data.arrow[i]);
+		}
+		for(var i = 0;i < data.shape.length;i++){
+			new Shape(data.shape[i]);
+		}
+	})
+	socket.on('update',function(data){
+		if(data){
+			for(var i = 0;i < data.player.length;i++){
+				var pack = data.player[i];
+				var p = Player.list[pack.id];
+				if(p){
+					p.doDraw = 2;
+					if(pack.x !== undefined)
+						p.x = pack.x;
+					if(pack.y !== undefined)
+						p.y = pack.y;
+					if(pack.direction !== undefined)
+						p.direction = pack.direction;
+					if(pack.hp !== undefined)
+						p.hp = pack.hp;
+					if(pack.score !== undefined)
+						p.score = pack.score;
+					if(pack.map !== undefined)
+						p.map = pack.map;
+					if(pack.reload !== undefined)
+						p.reload = pack.reload;
+				}
+			}
+			for(var i = 0;i < data.arrow.length;i++){
+				var pack = data.arrow[i];
+				var b = Arrow.list[pack.id];
+				if(b){
+					b.doDraw = 2;
+					if(pack.x !== undefined)
+						b.x = pack.x;
+					if(pack.y !== undefined)
+						b.y = pack.y;
+					if(pack.direction !== undefined)
+						b.direction = pack.direction;
+				}
+			}
+			for(var i = 0;i < data.shape.length;i++){
+				var pack = data.shape[i];
+				var b = Shape.list[pack.id];
+				if(b){
+					b.doDraw = 2;
+					if(pack.x !== undefined)
+						b.x = pack.x;
+					if(pack.y !== undefined)
+						b.y = pack.y;
+					if(pack.direction !== undefined)
+						b.direction = pack.direction;
+					if(pack.hp !== undefined)
+						b.hp = pack.hp;
+				}
+			}
+		}
+	})
+	socket.on('remove',function(data){
+		for(var i = 0;i < data.player.length;i++){
+			delete Player.list[data.player[i]];
+		}
+		for(var i = 0;i < data.arrow.length;i++){
+			delete Arrow.list[data.arrow[i]];
+		}
+		for(var i = 0;i < data.shape.length;i++){
+			delete Shape.list[data.shape[i]];
+		}
+	})
+	
+	
+	//drawing
+	setInterval(function(){
+		//autoScroll();
+		var CANVASWIDTH = window.innerWidth;
+		var CANVASHEIGHT = window.innerHeight;
+		ctx.canvas.width = window.innerWidth;
+		ctx.canvas.height = window.innerHeight;
+		//chat-text.height = "" + window.innerHeight - 110;
+		//chat-form.height = "" + window.innerHeight - 10;
+		if(!selfId)
+			return;
+		ctx.clearRect(0,0,WIDTH,HEIGHT);
+		drawAllMap();
+		for(var i in Arrow.list){
+			Arrow.list[i].draw();
+		}
+		for(var i in Shape.list){
+			Shape.list[i].draw();
+		}
+		for(var i in Player.list){
+			Player.list[i].draw();
+			if(Player.list[i] !== Player.list[selfId]){
+				Player.list[i].drawName();
+			}
+		}
+		
+		var mapx = CANVASWIDTH - MAPWIDTH - 30;
+		var mapy = CANVASHEIGHT - MAPHEIGHT - 30;
+		drawMap(mapx,mapy,MAPWIDTH,MAPHEIGHT,10,10,'#E67478','#37B9DC','#FFE869');//FFE869
+		ctx.fillStyle = 'gray';
+		ctx.fillRect(CANVASWIDTH - MAPWIDTH - 45,CANVASHEIGHT - MAPHEIGHT - 45,MAPWIDTH + 30,5);
+		ctx.fillRect(CANVASWIDTH - MAPWIDTH - 45,CANVASHEIGHT - MAPHEIGHT - 45,5,MAPHEIGHT + 30);
+		ctx.fillRect(CANVASWIDTH - MAPWIDTH - 40,CANVASHEIGHT - 20,MAPWIDTH + 25,5);
+		ctx.fillRect(CANVASWIDTH - 20,CANVASHEIGHT - MAPHEIGHT - 40,5,MAPHEIGHT + 25);
+		drawScore();
+		drawSelf();
+	},25);
+	var drawAllMap = function(){
+		var x = CANVASWIDTH/2 - Player.list[selfId].x;
+		var y = CANVASHEIGHT/2 - Player.list[selfId].y;
+		drawMap(x,y,WIDTH,HEIGHT,10000,10000,'#D1C0C1','#B8CACF','#FFE869');
+		ctx.fillStyle = '#B4B4B4';
+		for(var i = -100;i < CANVASWIDTH + 100; i += 22){
+			ctx.fillRect(-1 * Player.list[selfId].x % 22 + i,0,0.5,CANVASHEIGHT);
+		}
+		for(var j = -100;j < CANVASHEIGHT + 100; j += 22){
+			ctx.fillRect(0,-1 * Player.list[selfId].y % 22 + j,CANVASWIDTH,0.5);
+		}
+	}
+	var drawMap = function(x,y,width,height,mapx,mapy,redCol,blueCol,yelCol){
+		if(Player.list[selfId].map === 0){
+			ctx.fillStyle = '#CECECE';
+			ctx.fillRect(x,y,width,height);
+			ctx.fillStyle = redCol;
+			ctx.fillRect(x,y,500 * height / HEIGHT,height);
+			ctx.fillStyle = blueCol;
+			ctx.fillRect(x + width - 500 * width / WIDTH,y,500 * width / WIDTH,height);
+			ctx.fillStyle = yelCol;
+			ctx.fillRect(x + (width - 500 * width / WIDTH)/2,y + (height - 500 * height / HEIGHT)/2,500 * width / WIDTH,500 * height / HEIGHT);
+			
+			
+		}
+		if(Player.list[selfId].map === 1){
+			ctx.fillStyle = '#333333';
+			ctx.fillRect(x,y,width,height);
+		}
+		
+		ctx.fillStyle = '#B8B8B8';
+			ctx.fillRect(x - mapx,y - mapy,mapx * 2 + width,mapy);
+			ctx.fillRect(x - mapx,y - mapy,mapx,mapy * 2 + height);
+			ctx.fillRect(x - mapx,y + height,mapx * 2 + width,mapy);
+			ctx.fillRect(x + width,y - mapy,mapx,mapy * 2 + height);
+		/*ctx.fillStyle = 'red';
+		ctx.fillRect(mapx,mapy,50 * MAPHEIGHT / HEIGHT,MAPHEIGHT);
+		ctx.fillStyle = 'blue';
+		ctx.fillRect(MAPWIDTH - 50 * MAPWIDTH / WIDTH + mapx,mapy,50 * MAPWIDTH / WIDTH,MAPHEIGHT);
+		ctx.fillStyle = 'yellow';
+		ctx.fillRect((MAPWIDTH - (250 * MAPWIDTH / WIDTH))/2 + mapx,(MAPHEIGHT - (250 * MAPHEIGHT / HEIGHT))/2 + mapy,250 * MAPWIDTH / WIDTH,250 * MAPHEIGHT / HEIGHT);*/
+	}
+	var autoScroll = function(){
+		if(chatText.scrollTop > scroll){
+			scroll = chatText.scrollTop;
+		}
+		chatText.scrollTo({
+			top: scroll,
+			behavior: 'smooth',
+		});
+		scroll += 1;
+	}
+
+	window.setInterval(function(){ 
+		if(chatText.scrollTop > scroll){
+			scroll = chatText.scrollTop;
+		}
+	    chatText.scrollTo({ top: scroll, behavior: 'smooth' })
+	    scroll += 10000;
+	}, 100);
+
+	var drawSelf = function(){
+		
+		var mapx = CANVASWIDTH - MAPWIDTH;
+		var mapy = CANVASHEIGHT - MAPHEIGHT;
+		ctx.fillStyle = 'black';
+		ctx.beginPath();
+		ctx.arc(MAPWIDTH * Player.list[selfId].x / WIDTH + mapx - 30, MAPHEIGHT * Player.list[selfId].y / HEIGHT + mapy - 30, 2, 0, 2 * Math.PI);
+		ctx.fill();
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = 'gray';
+		ctx.stroke();
+	}
+	
+	var drawScore = function(){
+		ctx.fillStyle = 'black';
+		ctx.font = "30px Ubuntu";
+		//ctx.font-Style = "Bold 700";
+		ctx.fillText('Score: ' + Player.list[selfId].score,CANVASWIDTH / 2 - 50,CANVASHEIGHT - 50);
+	}
+	
+	
+	//detection
+	
+	document.onkeydown = function(event){
+		if(event.keyCode === 68) //d
+			socket.emit('keyPress',{inputId:'right',state:true});
+		else if(event.keyCode === 83) //s
+			socket.emit('keyPress',{inputId:'down',state:true});
+		else if(event.keyCode === 65) //a
+			socket.emit('keyPress',{inputId:'left',state:true});
+		else if(event.keyCode === 87) //w
+			socket.emit('keyPress',{inputId:'up',state:true});
+	}
+	document.onkeyup = function(event){
+		if(event.keyCode === 68) //d
+			socket.emit('keyPress',{inputId:'right',state:false});
+		else if(event.keyCode === 83) //s
+			socket.emit('keyPress',{inputId:'down',state:false});
+		else if(event.keyCode === 65) //a
+			socket.emit('keyPress',{inputId:'left',state:false});
+		else if(event.keyCode === 87) //w
+			socket.emit('keyPress',{inputId:'up',state:false});
+	}
+	
+	document.onmousedown = function(event){
+		socket.emit('keyPress',{inputId:'attack',state:true});
+	}
+	document.onmouseup = function(event){
+		socket.emit('keyPress',{inputId:'attack',state:false});
+	}
+	document.onmousemove = function(event){
+		var x = -CANVASWIDTH/2 + event.clientX + 18;
+		var y = -CANVASHEIGHT/2 + event.clientY;
+		//x=event.clientX;
+		//y=event.clientY;
+		var angle = Math.atan2(y,x) / Math.PI * 180;
+		socket.emit('keyPress',{inputId:'direction',state:{
+		x:x,
+		y:y,
+		}});
+	}
+	
+	document.oncontextmenu = function(event){
+		event.preventDefault();
+	}
+	
+</script>
