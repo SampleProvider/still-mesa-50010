@@ -17,8 +17,8 @@ app.get('/',function(req, res) {
 });
 app.use('/client',express.static(__dirname + '/client'));
 
-//serv.listen(process.env.PORT);
-serv.listen(2000);
+serv.listen(process.env.PORT || 2000);
+//serv.listen(2000);
 console.log('Server Started.');
 
 
@@ -38,7 +38,6 @@ io.sockets.on('connection', function(socket){
 	});
 	
 	socket.on('signIn',function(data){
-		console.log('sign in');
 		Database.isValidPassword(data,function(res){
 			if(res === 2){
 				Player.onConnect(socket,data.username);

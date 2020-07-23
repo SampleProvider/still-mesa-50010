@@ -56,7 +56,6 @@ Entity = function(param){
 		return Math.sqrt(Math.pow(self.x-pt.x,2) + Math.pow(self.y-pt.y,2))
 	}
 	
-	Entity.list[self.id] = self;
 	return self;
 }
 Entity.list = {};
@@ -99,13 +98,14 @@ Entity.getFrameUpdateData = function(){
 Player = function(param){
 	var self = Entity(param);
 	if(COLORCOUNT[0] < COLORCOUNT[1]){
-		self.color = COLOR[1];
-		COLORCOUNT[1] += 1;
-	}
-	else{
 		self.color = COLOR[0];
 		COLORCOUNT[0] += 1;
 	}
+	else{
+		self.color = COLOR[1];
+		COLORCOUNT[1] += 1;
+	}
+	console.log(self.color);
 	self.username = param.username
 	self.x = Math.random() * 200 + (WIDTH - 200)/2;
 	self.y = Math.random() * 200 + (HEIGHT - 200)/2;
@@ -114,6 +114,7 @@ Player = function(param){
 	self.xp = 10;
 	self.rank = "basic";
 	self.type = "Player";
+	self.team = [self.id];
 	
 	self.pressingRight = false;
 	self.pressingLeft = false;
@@ -152,22 +153,26 @@ Player = function(param){
 			self.hp += self.hp / 1000;
 		}
 	}
-	
+	//   /()/ /(*)/
 	self.respawn = function(){
 		self.score = 0;
-		self.x = Math.random() * 50 + (WIDTH - 50) * self.colorid;
-		self.y = Math.random() * HEIGHT;
+		if(self.color == 'blue'){
+			self.x = Math.random() * -500 + WIDTH;
+			self.y = Math.random() * HEIGHT;
+		}
+		else if(self.color == 'red'){
+			self.x = Math.random() * 500;
+			self.y = Math.random() * HEIGHT;
+		}
 		self.hp = self.hpMax;
-		self.inventory.addItem("speedBoost",1);
 	}
 	self.updateAttack = function(){
 		self.reload++;
 		if(self.pressingAttack){
 			if(self.reload > 15){
 				self.reload = -5;
-				var i = -1;
 				var error = Math.random() * 10;
-				self.shootArrow(i * 45 + self.direction + 45 + error,i * 45 + self.direction + 45 + error,true);
+				self.shootArrow(self.direction + error,self.direction + error,true);
 			}
 		}
 	}
@@ -180,7 +185,6 @@ Player = function(param){
 			y:self.y + Math.sin(angle/180*Math.PI) * 20,
 			map:self.map,
 			color:self.color,
-			colorname:self.colorname,
 			damage:self.arrowDamage,
 			addSpdX:self.spdX,
 			addSpdY:self.spdY,
@@ -283,6 +287,8 @@ Player.onConnect = function(socket,username){
 		else{
 			player.map += 1;
 		}
+		player.x = WIDTH / 2;
+		player.y = HEIGHT / 2;
 	});
 	
 	socket.on('sendMsgToServer',function(data){
@@ -361,7 +367,6 @@ Arrow = function(param){
 	self.radius = 15;
 	self.type = "Arrow";
 	self.color = param.color;
-	self.colorname = param.colorname;
 	self.direction = param.direction;
 	self.timer = 0;
 	self.toRemove = false;
@@ -545,7 +550,7 @@ Shape.getAllInitPack = function(){
 	return shapes;
 }
 spawnEntities = function(){
-	if(Math.random() < 0.02){
+	if(Math.random() < 0.02 && Shape.list.length < 50){
 		if(Math.random() < 0.8){
 			var shape = Shape({
 				map:Math.round(Math.random() + 0.1),
@@ -671,22 +676,37 @@ updateCrashes = function(){
 doAllMapCheck = function(){
 	mapCheck({x:0,y:0,width:500,height:HEIGHT,map:0,color:'red'});
 	mapCheck({x:WIDTH - 500,y:0,width:500,height:HEIGHT,map:0,color:'blue'});
+	mapCheck({x:500,y:500,width:WIDTH - 1000,height:500,map:1,color:'yellow'});
+	mapCheck({x:500,y:500,width:500,height:HEIGHT - 1000,map:1,color:'yellow'});
+	mapCheck({x:WIDTH - 1000,y:500,width:500,height:HEIGHT - 1000,map:1,color:'yellow'});
+	mapCheck({x:500,y:HEIGHT - 1000,width:WIDTH - 500,height:500,map:1,color:'yellow'});
 }
 
 var mapCheck = function(param){
     for(i in Entity.list){
 		entity = Entity.list[i];
-        if(entity.colorname !== param.color && entity.x > param.x && entity.x < param.x + param.width && entity.y > param.y && entity.y < param.y + param.height && entity.map === param.map){
+        if(entity.color !== param.color && entity.x > param.x && entity.x < param.x + param.width && entity.y > param.y && entity.y < param.y + param.height && entity.map === param.map){
 			if(entity.type === "Arrow"){
 				entity.hp -= entity.pentration * 100;
 			}
 			else if(entity.type === "Shape"){
-				//none
+				entity.hp -= 1;
 			}
 			else{
 				entity.hp -= 10;
 			}
         }
+        /*if(entity.color !== param.color && entity.x > param.x && entity.y > param.y && entity.map === param.map){
+			if(entity.type === "Arrow"){
+				entity.hp -= entity.pentration * 100;
+			}
+			else if(entity.type === "Shape"){
+				entity.hp -= 1;
+			}
+			else{
+				entity.hp -= 10;
+			}
+        }*/
     }
 }
 

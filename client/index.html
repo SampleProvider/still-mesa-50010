@@ -1,5 +1,5 @@
 <div id="signDiv">
-	<h1>Maitian Game Snapshot 0731a</h1>
+	<h1>Maitian Game Snapshot 0733a</h1>
 	<br><br>
 	Username: <input id="signDiv-username" type="text"></input><br>
 	Password: <input id="signDiv-password" type="password"></input><br>
@@ -9,7 +9,7 @@
 	
 	<br><br><br>
 	<h2>Changelog:</h2><br>
-	<p>Fixed Update/Packaging glitch<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p>
+	<p>Fixed Colors<br>Fixed shooting arrows making you unable to die<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p>
 </div>
 
 <div id="signError" style="display:none;">
@@ -182,6 +182,7 @@
 		self.y = initPack.y;
 		self.direction = initPack.direction;
 		self.color = initPack.color;
+		console.log(self.color);
 		self.hp = initPack.hp;
 		self.hpMax = initPack.hpMax;
 		self.score = initPack.score;
@@ -208,9 +209,9 @@
 			
 			var x = CANVASWIDTH/2 + self.x - Player.list[selfId].x;
 			var y = CANVASHEIGHT/2 + self.y - Player.list[selfId].y;
-
 			var colorFill = "";
 			var colorStroke = "";
+			console.log(self.color);
 			if(self.map === 1){
 				if(Player.list[selfId] === self){
 					colorFill = '#0088EE';
@@ -223,9 +224,11 @@
 				switch(self.color){
 					case 'red' :{
 						colorFill = '#F14E54';
+						break;
 					}
 					case 'blue' :{
 						colorFill = '#0088EE';
+						break;
 					}
 				}
 			}
@@ -241,9 +244,11 @@
 				switch(self.color){
 					case 'red' :{
 						colorStroke = '#B43A3F';
+						break;
 					}
 					case 'blue' :{
 						colorStroke = '#0085A8';
+						break;
 					}
 				}
 			}
@@ -371,9 +376,11 @@
 				switch(self.color){
 					case 'red' :{
 						colorFill = '#F14E54';
+						break;
 					}
 					case 'blue' :{
 						colorFill = '#0088EE';
+						break;
 					}
 				}
 			}
@@ -389,9 +396,11 @@
 				switch(self.color){
 					case 'red' :{
 						colorStroke = '#B43A3F';
+						break;
 					}
 					case 'blue' :{
 						colorStroke = '#0085A8';
+						break;
 					}
 				}
 			}
@@ -655,8 +664,13 @@
 			
 		}
 		if(Player.list[selfId].map === 1){
-			ctx.fillStyle = '#333333';
+			ctx.fillStyle = '#CECECE';
 			ctx.fillRect(x,y,width,height);
+			ctx.fillStyle = yelCol;
+			ctx.fillRect(x + 500 * width / WIDTH,y + 500 * height / HEIGHT,500 * height / HEIGHT,height - 1000 * height / HEIGHT);
+			ctx.fillRect(x + width - 1000 * width / WIDTH,y + 500 * height / HEIGHT,500 * height / HEIGHT,height - 1000 * height / HEIGHT);
+			ctx.fillRect(x + 500 * width / WIDTH,y + 500 * height / HEIGHT,width - 1000 * width / WIDTH,500 * height / HEIGHT);
+			ctx.fillRect(x + 500 * width / WIDTH,y + height - 1000 * height / HEIGHT,width - 1000 * width / WIDTH,500 * height / HEIGHT);
 		}
 		
 		ctx.fillStyle = '#B8B8B8';
