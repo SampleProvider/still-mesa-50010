@@ -1,5 +1,5 @@
 <div id="signDiv">
-	<h1>Maitian Game Snapshot 0733a</h1>
+	<h1>Maitian Game Snapshot 074f1a</h1>
 	<br><br>
 	Username: <input id="signDiv-username" type="text"></input><br>
 	Password: <input id="signDiv-password" type="password"></input><br>
@@ -9,12 +9,16 @@
 	
 	<br><br><br>
 	<h2>Changelog:</h2><br>
-	<p>Fixed Colors<br>Fixed shooting arrows making you unable to die<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p>
+	<p>Fixed Zooming<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p>
 </div>
 
 <div id="signError" style="display:none;">
 	<p style="color:red">Click <a href="https://forms.gle/q4toA7ECpKPhsje27">this</a> to win!</p>
 </div>
+
+<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'/>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1">
 
 <div id="gameDiv" style="display:none;">
 	
@@ -61,7 +65,7 @@
 	
 	var socket = io();
 	
-	socket.emit('canvasSize',{width:WIDTH,height:HEIGHT,canvaswidth:CANVASWIDTH,canvasheight:CANVASHEIGHT});
+	socket.emit('canvasSize',{canvaswidth:CANVASWIDTH,canvasheight:CANVASHEIGHT});
 	//chat
 
 	{
@@ -117,7 +121,7 @@
 	
 	var chatText = document.getElementById('chat-text');
 	var chatInput = document.getElementById('chat-input');
-	var chatForm = document.getElementById('chat-form');	
+	var chatForm = document.getElementById('chat-form');
 	chatText.style.top = window.innerHeight - 135;
 	chatForm.style.top = window.innerHeight - 50;
 	chatInput.style.top = window.innerHeight - 50;
@@ -604,12 +608,15 @@
 	//drawing
 	setInterval(function(){
 		//autoScroll();
-		var CANVASWIDTH = window.innerWidth;
-		var CANVASHEIGHT = window.innerHeight;
+		//CANVASWIDTH = window.innerWidth;
+		//CANVASHEIGHT = window.innerHeight;
 		ctx.canvas.width = window.innerWidth;
 		ctx.canvas.height = window.innerHeight;
-		//chat-text.height = "" + window.innerHeight - 110;
-		//chat-form.height = "" + window.innerHeight - 10;
+		ctx.scale(window.innerWidth / 1536,window.innerHeight / 722);
+		//socket.emit('canvasSize',{canvaswidth:CANVASWIDTH,canvasheight:CANVASHEIGHT});
+		chatText.style.top = window.innerHeight - 135;
+		chatForm.style.top = window.innerHeight - 50;
+		chatInput.style.top = window.innerHeight - 50;
 		if(!selfId)
 			return;
 		ctx.clearRect(0,0,WIDTH,HEIGHT);
@@ -637,6 +644,7 @@
 		ctx.fillRect(CANVASWIDTH - 20,CANVASHEIGHT - MAPHEIGHT - 40,5,MAPHEIGHT + 25);
 		drawScore();
 		drawSelf();
+		ctx.scale(1536 / window.innerWidth,722 / window.innerHeight);
 	},25);
 	var drawAllMap = function(){
 		var x = CANVASWIDTH/2 - Player.list[selfId].x;
@@ -755,8 +763,8 @@
 		socket.emit('keyPress',{inputId:'attack',state:false});
 	}
 	document.onmousemove = function(event){
-		var x = -CANVASWIDTH/2 + event.clientX + 18;
-		var y = -CANVASHEIGHT/2 + event.clientY;
+		var x = -window.innerWidth/2 + event.clientX + 18;
+		var y = -window.innerHeight/2 + event.clientY;
 		//x=event.clientX;
 		//y=event.clientY;
 		var angle = Math.atan2(y,x) / Math.PI * 180;

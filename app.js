@@ -1,8 +1,6 @@
 
-WIDTH = 20000;
-HEIGHT = 20000;
-CANVASWIDTH = 1000;
-CANVASHEIGHT = 1000;
+WIDTH = 6000;
+HEIGHT = 4000;
 
 var express = require('express');
 var app = express();
@@ -17,7 +15,7 @@ app.get('/',function(req, res) {
 });
 app.use('/client',express.static(__dirname + '/client'));
 
-serv.listen(process.env.PORT || 2000);
+serv.listen(process.env.PORT);
 //serv.listen(2000);
 console.log('Server Started.');
 
@@ -30,12 +28,6 @@ io.sockets.on('connection', function(socket){
 	socket.id = Math.random();
 	SOCKET_LIST[socket.id] = socket;
 	
-	socket.on('canvasSize',function(data){
-		WIDTH = data.width;
-		HEIGHT = data.height;
-		CANVASWIDTH = data.canvaswidth;
-		CANVASHEIGHT = data.canvasheight;
-	});
 	
 	socket.on('signIn',function(data){
 		Database.isValidPassword(data,function(res){

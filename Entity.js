@@ -125,6 +125,8 @@ Player = function(param){
 	self.direction = 0;
 	self.mouseX = 0;
 	self.mouseY = 0;
+	self.CANVASWIDTH = 1000;
+	self.CANVASHEIGHT = 1000;
 
 	self.accSpd = 2;
 	self.maxSpd = 5;
@@ -263,9 +265,14 @@ Player.onConnect = function(socket,username){
 	});
 	console.log(Player.list[socket.id].username + ' joined.');
 	
+	socket.on('canvasSize',function(data){
+		player.CANVASWIDTH = data.canvaswidth;
+		player.CANVASHEIGHT = data.canvasheight;
+	});
+
 	socket.on('keyPress',function(data){
 		if(data.inputId === 'left')
-			player.pressingLeft = data.state;	
+			player.pressingLeft = data.state;
 		else if(data.inputId === 'right')
 			player.pressingRight = data.state;
 		else if(data.inputId === 'up')
@@ -349,7 +356,7 @@ Player.update = function(id){
 	var socketPlayer = Player.list[id];
 	for(var j in Player.list){
 		var player = Player.list[j]
-		if(socketPlayer.x - CANVASWIDTH / 2 - 100 < player.x && socketPlayer.x + CANVASWIDTH / 2 + 100 > player.x && socketPlayer.y - CANVASHEIGHT / 2 - 100 < player.y && socketPlayer.y + CANVASHEIGHT / 2 + 100 > player.y && socketPlayer.map === player.map){
+		if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 100 < player.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 100 > player.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 100 < player.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 100 > player.y && socketPlayer.map === player.map){
 			pack.push(player.getUpdatePack());
 		}
 	}
@@ -417,7 +424,7 @@ Arrow.update = function(id){
 			removePack.arrow.push(arrow.id);
 		}
 		else{
-			if(socketPlayer.x - CANVASWIDTH / 2 - 100 < arrow.x && socketPlayer.x + CANVASWIDTH / 2 + 100 > arrow.x && socketPlayer.y - CANVASHEIGHT / 2 - 100 < arrow.y && socketPlayer.y + CANVASHEIGHT / 2 + 100 > arrow.y && socketPlayer.map === arrow.map){
+			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 100 < arrow.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 100 > arrow.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 100 < arrow.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 100 > arrow.y && socketPlayer.map === arrow.map){
 				pack.push(arrow.getUpdatePack());
 			}
 		}
@@ -536,7 +543,7 @@ Shape.update = function(id){
 			removePack.shape.push(shape.id);
 		}
 		else{
-			if(socketPlayer.x - CANVASWIDTH / 2 - 100 < shape.x && socketPlayer.x + CANVASWIDTH / 2 + 100 > shape.x && socketPlayer.y - CANVASHEIGHT / 2 - 100 < shape.y && socketPlayer.y + CANVASHEIGHT / 2 + 100 > shape.y && socketPlayer.map === shape.map){
+			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 100 < shape.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 100 > shape.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 100 < shape.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 100 > shape.y && socketPlayer.map === shape.map){
 				pack.push(shape.getUpdatePack());
 			}
 		}
