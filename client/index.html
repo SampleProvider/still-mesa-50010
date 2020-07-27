@@ -1,27 +1,33 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Maitian Game Snapshot 074f2a</title>
+	<link href="client/style.css" rel="stylesheet" type="text/css" >
+	<style>
+	</style>
+</head>
+<body>
 <div id="signDiv">
-	<h1>Maitian Game Snapshot 074f1a</h1>
+	<h1 class = "SignIn">Maitian Game Snapshot 074d2a</h1>
 	<br><br>
-	Username: <input id="signDiv-username" type="text"></input><br>
-	Password: <input id="signDiv-password" type="password"></input><br>
-	<button id="signDiv-signIn">Sign In</button>
-	<button id="signDiv-createAccount">Create an Account</button>
-	<button id="signDiv-deleteAccount">Delete an Account</button><br>
+	Username: <input id="signDiv-username" class = "SignIn" type="text"></input><br>
+	<!--Password: <input id="signDiv-password" class = "SignIn" type="password"></input><br>-->
+	<button id="signDiv-signIn" class = "SignIn">Sign In</button>
+	<!--<button id="signDiv-createAccount" class = "SignIn">Create an Account</button>
+	<button id="signDiv-deleteAccount" class = "SignIn">Delete an Account</button><br>-->
 	
 	<br><br><br>
-	<h2>Changelog:</h2><br>
-	<p>Fixed Zooming<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p>
+	<h2 class = "SignIn">Changelog:</h2 class = "SignIn"><br>
+	<p class = "SignIn">Fixed Zooming<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p class = "SignIn">
 </div>
 
 <div id="signError" style="display:none;">
 	<p style="color:red">Click <a href="https://forms.gle/q4toA7ECpKPhsje27">this</a> to win!</p>
 </div>
 
-<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'/>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1">
 
 <div id="gameDiv" style="display:none;">
-	
 	<div id="game" style="position:absolute;top:0px;left:0px">
 		
 		<canvas id="ctx" width="screen.width" height="screen.height" style="position:absolute;left:0px;top:0px;right:0px;bottom:110px;border:0px solid #000000;"></canvas>
@@ -33,7 +39,7 @@
 	<div id="belowGame" style="position:absolute;left:0px;top:0px">
 		<div id="inventory" style="position:absolute;top:40px;width:55"></div>
 		<div id="chat-text" style="position:absolute;left:0px;width:500px;height:100px;overflow-y:scroll">
-			<div>Hello!</div>
+			<div id="chat-filler"></div>
 		</div>
 
 		
@@ -41,7 +47,7 @@
 			<input id="chat-input" type="text" style="position:absolute;left:0px;width:500px;height:25px;border:2px solid #000000;"></input>
 		</form>
 	</div>
-	<!--<canvas id="ctxmap" width="300" height="200" style="border:1px solid #000000;"></canvas>-->
+	<button id="upgrade" style="position:absolute;top:0px;left:100px">hihihi</button>
 	
 </div>
 
@@ -68,40 +74,40 @@
 	socket.emit('canvasSize',{canvaswidth:CANVASWIDTH,canvasheight:CANVASHEIGHT});
 	//chat
 
-	{
 	
 	var scroll = 0;
 	var signDiv = document.getElementById('signDiv');
 	var signDivUsername = document.getElementById('signDiv-username');
 	var signDivSignIn = document.getElementById('signDiv-signIn');
-	var signDivCreateAccount = document.getElementById('signDiv-createAccount');
-	var signDivDeleteAccount = document.getElementById('signDiv-deleteAccount');
-	var signDivPassword = document.getElementById('signDiv-password');
-	var SignError = document.getElementById('signError');
+	//var signDivCreateAccount = document.getElementById('signDiv-createAccount');
+	//var signDivDeleteAccount = document.getElementById('signDiv-deleteAccount');
+	//var signDivPassword = document.getElementById('signDiv-password');
+	//var SignError = document.getElementById('signError');
 	
 	signDivSignIn.onclick = function(){
-		socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
+		//socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
+		socket.emit('signIn',{username:signDivUsername.value});
 		console.log('sign in');
 	}
-	signDivCreateAccount.onclick = function(){
+	/*signDivCreateAccount.onclick = function(){
 		socket.emit('createAccount',{username:signDivUsername.value,password:signDivPassword.value});
 	}
 	signDivDeleteAccount.onclick = function(){
 		socket.emit('deleteAccount',{username:signDivUsername.value});
-	}
+	}*/
 	socket.on('signInResponse',function(data){
 		if(data.success == 2){
 			signDiv.style.display = 'none';
 			gameDiv.style.display = 'inline-block';
-			signError.style.display = 'none';
+			//signError.style.display = 'none';
 		}
 		else if(data.success == 1){
 			alert("The account with username \'" + signDivUsername.value + "\' and password \'" + signDivPassword.value + "\' is already used. Please disconnect the other account to use this one.");
-			signError.style.display = 'inline-block';
+			//signError.style.display = 'inline-block';
 		}
 		else{
 			alert("No account found with username \'" + signDivUsername.value + "\' and password \'" + signDivPassword.value + "\'.");
-			signError.style.display = 'inline-block';
+			//signError.style.display = 'inline-block';
 		}
 	});
 	socket.on('createAccountResponse',function(data){
@@ -122,9 +128,6 @@
 	var chatText = document.getElementById('chat-text');
 	var chatInput = document.getElementById('chat-input');
 	var chatForm = document.getElementById('chat-form');
-	chatText.style.top = window.innerHeight - 135;
-	chatForm.style.top = window.innerHeight - 50;
-	chatInput.style.top = window.innerHeight - 50;
 	
 
 	socket.on('addToChat',function(data){
@@ -150,7 +153,6 @@
 		chatInput.value = '';
 	}
 	
-	}
 	//UI
 	
 	var changeMap = function(){
@@ -193,6 +195,8 @@
 		self.map = initPack.map;
 		self.reload = 10;
 		self.doDraw = 0;
+		self.class = "Basic";
+		self.xp = 0;
 		
 		self.draw = function(){
 			if(Player.list[selfId].map !== self.map)
@@ -214,8 +218,7 @@
 			var x = CANVASWIDTH/2 + self.x - Player.list[selfId].x;
 			var y = CANVASHEIGHT/2 + self.y - Player.list[selfId].y;
 			var colorFill = "";
-			var colorStroke = "";
-			console.log(self.color);
+			var colorStroke = '#333333';
 			if(self.map === 1){
 				if(Player.list[selfId] === self){
 					colorFill = '#0088EE';
@@ -236,27 +239,6 @@
 					}
 				}
 			}
-			if(self.map === 1){
-				if(Player.list[selfId] === self){
-					colorStroke = '#0085A8';
-				}
-				else{
-					colorStroke = '#B43A3F';
-				}
-			}
-			else{
-				switch(self.color){
-					case 'red' :{
-						colorStroke = '#B43A3F';
-						break;
-					}
-					case 'blue' :{
-						colorStroke = '#0085A8';
-						break;
-					}
-				}
-			}
-			colorStroke = '#333333';
 			ctx.translate(x,y);
 			ctx.rotate(self.direction * Math.PI / 180);
 		
@@ -560,6 +542,10 @@
 						p.map = pack.map;
 					if(pack.reload !== undefined)
 						p.reload = pack.reload;
+					if(pack.class !== undefined)
+						p.class = pack.class;
+					if(pack.xp !== undefined)
+						p.xp = pack.xp;
 				}
 			}
 			for(var i = 0;i < data.arrow.length;i++){
@@ -607,16 +593,18 @@
 	
 	//drawing
 	setInterval(function(){
-		//autoScroll();
-		//CANVASWIDTH = window.innerWidth;
-		//CANVASHEIGHT = window.innerHeight;
 		ctx.canvas.width = window.innerWidth;
 		ctx.canvas.height = window.innerHeight;
-		ctx.scale(window.innerWidth / 1536,window.innerHeight / 722);
-		//socket.emit('canvasSize',{canvaswidth:CANVASWIDTH,canvasheight:CANVASHEIGHT});
-		chatText.style.top = window.innerHeight - 135;
+		chatText.style.top = window.innerHeight - 150;
 		chatForm.style.top = window.innerHeight - 50;
 		chatInput.style.top = window.innerHeight - 50;
+		if(window.innerWidth > 1536 && window.innerHeight > 722){
+			ctx.scale(window.innerWidth / 1536,window.innerHeight / 722);
+		}
+		else{
+			CANVASWIDTH = window.innerWidth;
+			CANVASHEIGHT = window.innerHeight;
+		}
 		if(!selfId)
 			return;
 		ctx.clearRect(0,0,WIDTH,HEIGHT);
@@ -642,8 +630,7 @@
 		ctx.fillRect(CANVASWIDTH - MAPWIDTH - 45,CANVASHEIGHT - MAPHEIGHT - 45,5,MAPHEIGHT + 30);
 		ctx.fillRect(CANVASWIDTH - MAPWIDTH - 40,CANVASHEIGHT - 20,MAPWIDTH + 25,5);
 		ctx.fillRect(CANVASWIDTH - 20,CANVASHEIGHT - MAPHEIGHT - 40,5,MAPHEIGHT + 25);
-		drawScore();
-		drawSelf();
+		drawHUD();
 		ctx.scale(1536 / window.innerWidth,722 / window.innerHeight);
 	},25);
 	var drawAllMap = function(){
@@ -686,24 +673,7 @@
 			ctx.fillRect(x - mapx,y - mapy,mapx,mapy * 2 + height);
 			ctx.fillRect(x - mapx,y + height,mapx * 2 + width,mapy);
 			ctx.fillRect(x + width,y - mapy,mapx,mapy * 2 + height);
-		/*ctx.fillStyle = 'red';
-		ctx.fillRect(mapx,mapy,50 * MAPHEIGHT / HEIGHT,MAPHEIGHT);
-		ctx.fillStyle = 'blue';
-		ctx.fillRect(MAPWIDTH - 50 * MAPWIDTH / WIDTH + mapx,mapy,50 * MAPWIDTH / WIDTH,MAPHEIGHT);
-		ctx.fillStyle = 'yellow';
-		ctx.fillRect((MAPWIDTH - (250 * MAPWIDTH / WIDTH))/2 + mapx,(MAPHEIGHT - (250 * MAPHEIGHT / HEIGHT))/2 + mapy,250 * MAPWIDTH / WIDTH,250 * MAPHEIGHT / HEIGHT);*/
 	}
-	var autoScroll = function(){
-		if(chatText.scrollTop > scroll){
-			scroll = chatText.scrollTop;
-		}
-		chatText.scrollTo({
-			top: scroll,
-			behavior: 'smooth',
-		});
-		scroll += 1;
-	}
-
 	window.setInterval(function(){ 
 		if(chatText.scrollTop > scroll){
 			scroll = chatText.scrollTop;
@@ -712,7 +682,7 @@
 	    scroll += 10000;
 	}, 100);
 
-	var drawSelf = function(){
+	var drawHUD = function(){
 		
 		var mapx = CANVASWIDTH - MAPWIDTH;
 		var mapy = CANVASHEIGHT - MAPHEIGHT;
@@ -723,15 +693,12 @@
 		ctx.lineWidth = 1;
 		ctx.strokeStyle = 'gray';
 		ctx.stroke();
-	}
-	
-	var drawScore = function(){
+
 		ctx.fillStyle = 'black';
 		ctx.font = "30px Ubuntu";
-		//ctx.font-Style = "Bold 700";
 		ctx.fillText('Score: ' + Player.list[selfId].score,CANVASWIDTH / 2 - 50,CANVASHEIGHT - 50);
+		ctx.fillText('Lvl ' + Player.list[selfId].xp + ' ' + Player.list[selfId].class,CANVASWIDTH / 2 - 65,CANVASHEIGHT - 25);
 	}
-	
 	
 	//detection
 	
@@ -777,5 +744,6 @@
 	document.oncontextmenu = function(event){
 		event.preventDefault();
 	}
-	
 </script>
+</body>
+</html>

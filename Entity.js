@@ -111,8 +111,8 @@ Player = function(param){
 	self.y = Math.random() * 200 + (HEIGHT - 200)/2;
 	self.radius = 20;
 	
-	self.xp = 10;
-	self.rank = "basic";
+	self.xp = 0;
+	self.class = "Basic";
 	self.type = "Player";
 	self.team = [self.id];
 	
@@ -132,11 +132,14 @@ Player = function(param){
 	self.maxSpd = 5;
 	self.reload = 10;
 	self.recoil = 5;
+	self.reloadTime = 1;
 	
 	self.hp = 100;
 	self.hpMax = 100;
+	self.regen = 0.01
 	self.damage = 1;
 	self.arrowDamage = 3;
+	self.arrowAccuracy = 10;
 	
 	self.score = 0;
 	
@@ -152,7 +155,17 @@ Player = function(param){
 			self.respawn();
 		}
 		if(self.hp < self.hpMax){
-			self.hp += self.hp / 1000;
+			//self.hp += self.regen;
+		}
+		self.xp = Math.round(self.score / 10);
+		self.score = Math.round(self.score);
+		if(self.xp > 20 && self.class === "Basic"){
+			self.class = 'Sniper';
+			//self.hp = 200;
+			self.hpMax = 200;
+			self.arrowDamage = 10;
+			self.arrowAccuracy = 1;
+			self.reloadTime = 0.3;
 		}
 	}
 	//   /()/ /(*)/
@@ -169,12 +182,13 @@ Player = function(param){
 		self.hp = self.hpMax;
 	}
 	self.updateAttack = function(){
-		self.reload++;
+		self.reload+=self.reloadTime;
 		if(self.pressingAttack){
 			if(self.reload > 15){
 				self.reload = -5;
-				var error = Math.random() * 10;
+				var error = Math.random() * self.arrowAccuracy;
 				self.shootArrow(self.direction + error,self.direction + error,true);
+				self.score += 100;
 			}
 		}
 	}
@@ -244,6 +258,8 @@ Player = function(param){
 			score:self.score,
 			map:self.map,
 			reload:self.reload,
+			class:self.class,
+			xp:self.xp,
 		}
 	}
 	Player.list[self.id] = self;
@@ -386,6 +402,8 @@ Arrow = function(param){
 		if(self.hp < 1){
 			self.toRemove = true;
 		}
+		console.log(self.id);
+		console.log(self.hp);
 	}
 	self.getInitPack = function(){
 		return {
@@ -531,6 +549,7 @@ Shape = function(param){
 	return self;
 }
 Shape.list = {};
+var Shapes = 0;
 Shape.update = function(id){
 	var pack = [];
 	var socketPlayer = Player.list[id];
@@ -557,7 +576,8 @@ Shape.getAllInitPack = function(){
 	return shapes;
 }
 spawnEntities = function(){
-	if(Math.random() < 0.02 && Shape.list.length < 50){
+	if(Math.random() < 0.02 && Shapes < 50){
+		Shapes += 1;
 		if(Math.random() < 0.8){
 			var shape = Shape({
 				map:Math.round(Math.random() + 0.1),

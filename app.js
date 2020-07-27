@@ -7,7 +7,6 @@ var app = express();
 var serv = require('http').Server(app);
 require('./Entity');
 require('./Database');
-//require('./map');
 require('./client/Inventory');
 
 app.get('/',function(req, res) {
