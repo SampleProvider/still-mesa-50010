@@ -29,7 +29,10 @@ button{
     border-radius: 5px;
 }
 
-#upgrade {
+.upgrade {
+    position: absolute;
+    top: 10px;
+    font-size: 30;
     animation: 1s upgradeSlideIn;
 }
 @keyframes upgradeSlideIn {
@@ -37,6 +40,6 @@ button{
         top:-100px;
     }
     to {
-        top:0px;
+        top:10px;
     }
 }

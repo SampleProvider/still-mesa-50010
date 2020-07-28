@@ -2,14 +2,14 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width">
-	<title>Maitian Game Snapshot 074f2a</title>
+	<title>Maitian Game 0.8.0</title>
 	<link href="client/style.css" rel="stylesheet" type="text/css" >
 	<style>
 	</style>
 </head>
 <body>
 <div id="signDiv">
-	<h1 class = "SignIn">Maitian Game Snapshot 074d2a</h1>
+	<h1 class = "SignIn">Maitian Game 0.8.0</h1>
 	<br><br>
 	Username: <input id="signDiv-username" class = "SignIn" type="text"></input><br>
 	<!--Password: <input id="signDiv-password" class = "SignIn" type="password"></input><br>-->
@@ -19,7 +19,7 @@
 	
 	<br><br><br>
 	<h2 class = "SignIn">Changelog:</h2 class = "SignIn"><br>
-	<p class = "SignIn">Fixed Zooming<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.</p class = "SignIn">
+	<p class = "SignIn">Added Classes<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.<br><br>Also check out Tianmu Game <a href="https://www.khanacademy.org/computer-programming/test/6067102266245120">here</a>!</p class = "SignIn">
 </div>
 
 <div id="signError" style="display:none;">
@@ -47,7 +47,6 @@
 			<input id="chat-input" type="text" style="position:absolute;left:0px;width:500px;height:25px;border:2px solid #000000;"></input>
 		</form>
 	</div>
-	<button id="upgrade" style="position:absolute;top:0px;left:100px">hihihi</button>
 	
 </div>
 
@@ -128,6 +127,7 @@
 	var chatText = document.getElementById('chat-text');
 	var chatInput = document.getElementById('chat-input');
 	var chatForm = document.getElementById('chat-form');
+	var belowGame= document.getElementById('belowGame');
 	
 
 	socket.on('addToChat',function(data){
@@ -178,7 +178,36 @@
 		inventory.items = items;
 		inventory.refreshRender();
 	});
+	socket.on('updateHUD',function(data){
+		/*
+		Upgrade Codes:
+		0:Basic
+		1:Warrior
+		2:Knight
+		3:Gladiator
+		4:Paladin
+		5:
+		6:
+		7:
+		8:Archer
+		9:Ranger
+		10:Sniper
+		*/
+		if(data.state === 'upgrade0'){
+			belowGame.innerHTML += '<button class="upgrade" onclick="playerUpgrade(8)" style="left:100;">Upgrade to ARCHER!</button>';
+		}
+		if(data.state === 'upgrade1'){
+			belowGame.innerHTML += '<button class="upgrade" onclick="playerUpgrade(9)" style="left:100;">Upgrade to RANGER!</button>';
+			belowGame.innerHTML += '<button class="upgrade" onclick="playerUpgrade(10)" style="left:250;">Upgrade to SNIPER!</button>';
+		}
+	})
 
+	var drawTool = function(tool){
+		switch(tool){
+			case "Bow":
+				break;
+		}
+	}
 
 	var Player = function(initPack){
 		var self = {};
@@ -214,7 +243,6 @@
 			else{
 				reload = self.reload;
 			}
-			
 			var x = CANVASWIDTH/2 + self.x - Player.list[selfId].x;
 			var y = CANVASHEIGHT/2 + self.y - Player.list[selfId].y;
 			var colorFill = "";
@@ -229,20 +257,21 @@
 			}
 			else{
 				switch(self.color){
-					case 'red' :{
+					case 'red' :
 						colorFill = '#F14E54';
 						break;
-					}
-					case 'blue' :{
+					
+					case 'blue' :
 						colorFill = '#0088EE';
 						break;
-					}
+					
 				}
 			}
+
+
 			ctx.translate(x,y);
 			ctx.rotate(self.direction * Math.PI / 180);
-		
-			//Player
+			//Body
 			ctx.fillStyle = colorFill;
 			ctx.beginPath();
 			ctx.arc(0, 0, 18, 0, 2 * Math.PI);
@@ -250,52 +279,152 @@
 			ctx.lineWidth = 3;
 			ctx.strokeStyle = colorStroke;
 			ctx.stroke();
-			//bow
-			ctx.beginPath();
-			ctx.arc(-10, 0, 50, -1/3 * Math.PI, 1/3 * Math.PI);
-			ctx.lineWidth = 3;
-			ctx.strokeStyle = '#752500';
-			ctx.stroke();
+			//Tools
+			switch(self.class){
+				case "Basic":
+					break;
+				case "Archer":
+					//Bow
+					ctx.beginPath();
+					ctx.arc(-10, 0, 50, -1/3 * Math.PI, 1/3 * Math.PI);
+					ctx.lineWidth = 3;
+					ctx.strokeStyle = '#752500';
+					ctx.stroke();
 
-			ctx.beginPath();
-			ctx.moveTo(15,25 * Math.sqrt(3));
-			ctx.lineTo(15 - reload * 3,0);
-			ctx.moveTo(15,-25 * Math.sqrt(3));
-			ctx.lineTo(15 - reload * 3,0);
-			ctx.lineWidth = 3;
-			ctx.stroke();
-			
-			if(reload > 5){
-				ctx.translate(23 - reload * 3,0);
-				ctx.fillStyle = colorFill;
-				ctx.beginPath();
-				ctx.lineWidth = 2;
-				ctx.strokeStyle = '#333333';
-				ctx.moveTo(50,0);
-				ctx.lineTo(0,0);
+					ctx.beginPath();
+					ctx.moveTo(15,25 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3,0);
+					ctx.moveTo(15,-25 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3,0);
+					ctx.lineWidth = 3;
+					ctx.stroke();
+					
+					if(reload > 5){
+						ctx.translate(23 - reload * 3,0);
+						ctx.fillStyle = colorFill;
+						ctx.beginPath();
+						ctx.lineWidth = 2;
+						ctx.strokeStyle = '#333333';
+						ctx.moveTo(50,0);
+						ctx.lineTo(0,0);
 
-				ctx.moveTo(0,-5);
-				ctx.lineTo(10,0);
-				ctx.lineTo(0,5);
+						ctx.moveTo(0,-5);
+						ctx.lineTo(10,0);
+						ctx.lineTo(0,5);
 
-				ctx.moveTo(-5,-5);
-				ctx.lineTo(5,0);
-				ctx.lineTo(-5,5);
+						ctx.moveTo(-5,-5);
+						ctx.lineTo(5,0);
+						ctx.lineTo(-5,5);
 
-				ctx.stroke();
-				ctx.beginPath();
+						ctx.stroke();
+						ctx.beginPath();
 
-				ctx.moveTo(61,0);
-				ctx.lineTo(50,-5);
-				ctx.lineTo(50,5);
-				ctx.lineTo(61,0);
-				
-				ctx.fill();
-				ctx.stroke();
-				
-				ctx.translate(- 23 + reload * 3,0);
+						ctx.moveTo(61,0);
+						ctx.lineTo(50,-5);
+						ctx.lineTo(50,5);
+						ctx.lineTo(61,0);
+						
+						ctx.fill();
+						ctx.stroke();
+						
+						ctx.translate(- 23 + reload * 3,0);
+					}
+					break;
+				case "Ranger":
+					//Bow
+					ctx.beginPath();
+					ctx.arc(-10, 0, 50, -1/3 * Math.PI, 1/3 * Math.PI);
+					ctx.lineWidth = 3;
+					ctx.strokeStyle = '#752500';
+					ctx.stroke();
+
+					ctx.beginPath();
+					ctx.moveTo(15,25 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3,0);
+					ctx.moveTo(15,-25 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3,0);
+					ctx.lineWidth = 3;
+					ctx.stroke();
+					
+					if(reload > 5){
+						ctx.translate(23 - reload * 3,0);
+						ctx.fillStyle = colorFill;
+						ctx.beginPath();
+						ctx.lineWidth = 2;
+						ctx.strokeStyle = '#333333';
+						ctx.moveTo(50,0);
+						ctx.lineTo(0,0);
+
+						ctx.moveTo(0,-5);
+						ctx.lineTo(10,0);
+						ctx.lineTo(0,5);
+
+						ctx.moveTo(-5,-5);
+						ctx.lineTo(5,0);
+						ctx.lineTo(-5,5);
+
+						ctx.stroke();
+						ctx.beginPath();
+
+						ctx.moveTo(61,0);
+						ctx.lineTo(50,-5);
+						ctx.lineTo(50,5);
+						ctx.lineTo(61,0);
+						
+						ctx.fill();
+						ctx.stroke();
+						
+						ctx.translate(- 23 + reload * 3,0);
+					}
+					break;
+				case "Sniper":
+					//Bow
+					ctx.beginPath();
+					ctx.arc(-24, 0, 80, -1/3 * Math.PI, 1/3 * Math.PI);
+					ctx.lineWidth = 3;
+					ctx.strokeStyle = '#752500';
+					ctx.stroke();
+
+					ctx.beginPath();
+					ctx.moveTo(15,40 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3.3,0);
+					ctx.moveTo(15,-40 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3.3,0);
+					ctx.lineWidth = 3;
+					ctx.stroke();
+					
+					if(reload > 5){
+						ctx.translate(23 - reload * 3.5,0);
+						ctx.fillStyle = colorFill;
+						ctx.beginPath();
+						ctx.lineWidth = 4;
+						ctx.strokeStyle = '#333333';
+						ctx.moveTo(80,0);
+						ctx.lineTo(0,0);
+
+						ctx.moveTo(0,-8);
+						ctx.lineTo(16,0);
+						ctx.lineTo(0,8);
+
+						ctx.moveTo(-8,-8);
+						ctx.lineTo(8,0);
+						ctx.lineTo(-8,8);
+
+						ctx.stroke();
+						ctx.beginPath();
+
+						ctx.moveTo(96,0);
+						ctx.lineTo(80,-8);
+						ctx.lineTo(80,8);
+						ctx.lineTo(96,0);
+						
+						ctx.fill();
+						ctx.stroke();
+						
+						ctx.translate(- 23 + reload * 3.5,0);
+					}
+					break;
 			}
-			
 			
 			//ctx.drawImage(Img.player,-30,-30);
 			
@@ -326,7 +455,21 @@
 		return self;
 	}
 	Player.list = {};
-	
+	var playerUpgrade = function(playerClass){
+		if(playerClass === 8){
+			socket.emit('playerUpdate','Archer');
+		}
+		if(playerClass === 9){
+			socket.emit('playerUpdate','Ranger');
+		}
+		if(playerClass === 10){
+			socket.emit('playerUpdate','Sniper');
+		}
+		var upgrades = document.querySelectorAll('.upgrade');  
+		for (var i of upgrades) {
+   			i.remove();
+		}
+	}
 	var Arrow = function(initPack){
 		var self = {};
 		self.id = initPack.id;
@@ -349,7 +492,7 @@
 			
 			
 			var colorFill = "";
-			var colorStroke = "";
+			var colorStroke = "#333333";
 			if(self.map === 1){
 				if(selfId === self.parent){
 					colorFill = '#0088EE';
@@ -360,34 +503,12 @@
 			}
 			else{
 				switch(self.color){
-					case 'red' :{
+					case 'red' :
 						colorFill = '#F14E54';
 						break;
-					}
-					case 'blue' :{
+					case 'blue' :
 						colorFill = '#0088EE';
 						break;
-					}
-				}
-			}
-			if(self.map === 1){
-				if(selfId === self.parent){
-					colorStroke = '#0085A8';
-				}
-				else{
-					colorStroke = '#B43A3F';
-				}
-			}
-			else{
-				switch(self.color){
-					case 'red' :{
-						colorStroke = '#B43A3F';
-						break;
-					}
-					case 'blue' :{
-						colorStroke = '#0085A8';
-						break;
-					}
 				}
 			}
 			ctx.translate(width,height);
@@ -397,7 +518,7 @@
 			ctx.fillStyle = colorFill;
 			ctx.beginPath();
 			ctx.lineWidth = 2;
-			ctx.strokeStyle = '#333333';
+			ctx.strokeStyle = colorStroke;
 			ctx.moveTo(50,0);
 			ctx.lineTo(0,0);
 
@@ -536,6 +657,8 @@
 						p.direction = pack.direction;
 					if(pack.hp !== undefined)
 						p.hp = pack.hp;
+					if(pack.hpMax !== undefined)
+						p.hpMax = pack.hpMax;
 					if(pack.score !== undefined)
 						p.score = pack.score;
 					if(pack.map !== undefined)

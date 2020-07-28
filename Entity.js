@@ -97,6 +97,7 @@ Entity.getFrameUpdateData = function(){
 }
 Player = function(param){
 	var self = Entity(param);
+	self.socket = param.socket;
 	if(COLORCOUNT[0] < COLORCOUNT[1]){
 		self.color = COLOR[0];
 		COLORCOUNT[0] += 1;
@@ -105,7 +106,6 @@ Player = function(param){
 		self.color = COLOR[1];
 		COLORCOUNT[1] += 1;
 	}
-	console.log(self.color);
 	self.username = param.username
 	self.x = Math.random() * 200 + (WIDTH - 200)/2;
 	self.y = Math.random() * 200 + (HEIGHT - 200)/2;
@@ -113,8 +113,8 @@ Player = function(param){
 	
 	self.xp = 0;
 	self.class = "Basic";
+	self.upgrade = false;
 	self.type = "Player";
-	self.team = [self.id];
 	
 	self.pressingRight = false;
 	self.pressingLeft = false;
@@ -136,7 +136,7 @@ Player = function(param){
 	
 	self.hp = 100;
 	self.hpMax = 100;
-	self.regen = 0.01
+	self.regen = 0.01;
 	self.damage = 1;
 	self.arrowDamage = 3;
 	self.arrowAccuracy = 10;
@@ -151,44 +151,46 @@ Player = function(param){
 		self.updateSpd();
 		super_update();
 		self.updateAttack();
+		self.updateClass();
 		if(self.hp < 1){
 			self.respawn();
 		}
 		if(self.hp < self.hpMax){
-			//self.hp += self.regen;
+			self.hp += self.regen;
 		}
 		self.xp = Math.round(self.score / 10);
 		self.score = Math.round(self.score);
-		if(self.xp > 20 && self.class === "Basic"){
-			self.class = 'Sniper';
-			//self.hp = 200;
-			self.hpMax = 200;
-			self.arrowDamage = 10;
-			self.arrowAccuracy = 1;
-			self.reloadTime = 0.3;
-		}
 	}
 	//   /()/ /(*)/
-	self.respawn = function(){
-		self.score = 0;
-		if(self.color == 'blue'){
-			self.x = Math.random() * -500 + WIDTH;
-			self.y = Math.random() * HEIGHT;
+	self.updateSpd = function(){
+		if(self.x < -25)
+			self.x = -25;
+		if(self.x > WIDTH + 25)
+			self.x = WIDTH + 25;
+		if(self.y < -25)
+			self.y = -25;
+		if(self.y > HEIGHT + 25)
+			self.y = HEIGHT + 25;
+		if(self.pressingRight){
+			self.spdX += self.accSpd;
 		}
-		else if(self.color == 'red'){
-			self.x = Math.random() * 500;
-			self.y = Math.random() * HEIGHT;
+		else if(self.pressingLeft){
+			self.spdX += -self.accSpd;
 		}
-		self.hp = self.hpMax;
+		if(self.pressingUp){
+			self.spdY += -self.accSpd;
+		}
+		else if(self.pressingDown){
+			self.spdY += self.accSpd;
+		}
 	}
 	self.updateAttack = function(){
-		self.reload+=self.reloadTime;
-		if(self.pressingAttack){
+		self.reload += self.reloadTime;
+		if(self.pressingAttack && self.class !== "Basic"){
 			if(self.reload > 15){
 				self.reload = -5;
 				var error = Math.random() * self.arrowAccuracy;
 				self.shootArrow(self.direction + error,self.direction + error,true);
-				self.score += 100;
 			}
 		}
 	}
@@ -212,27 +214,39 @@ Player = function(param){
 		}
 		console.log(self.username + ' shot arrow(' + arrow.id + ').');
 	}
-	self.updateSpd = function(){
-		if(self.x < -25)
-			self.x = -25;
-		if(self.x > WIDTH + 25)
-			self.x = WIDTH + 25;
-		if(self.y < -25)
-			self.y = -25;
-		if(self.y > HEIGHT + 25)
-			self.y = HEIGHT + 25;
-		if(self.pressingRight){
-			self.spdX += self.accSpd;
+	self.updateClass = function(){
+		if(self.class === "Basic" && self.upgrade === false){
+			self.upgrade = true;
+			self.socket.emit('updateHUD',{
+				state:'upgrade0',
+			});
 		}
-		else if(self.pressingLeft){
-			self.spdX += -self.accSpd;
+		if(self.xp > 20 && self.class === "Archer" && self.upgrade === false){
+			self.upgrade = true;
+			self.socket.emit('updateHUD',{
+				state:'upgrade1',
+			});
 		}
-		if(self.pressingUp){
-			self.spdY += -self.accSpd;
+		if(self.xp > 200 && self.class === "Sniper" && self.upgrade === false){
+			self.upgrade = true;
+			self.socket.emit('updateHUD',{
+				state:'upgradeN',
+			});
 		}
-		else if(self.pressingDown){
-			self.spdY += self.accSpd;
+	}
+	self.respawn = function(){
+		self.score = 0;
+		if(self.color == 'blue'){
+			self.x = Math.random() * -500 + WIDTH;
+			self.y = Math.random() * HEIGHT;
 		}
+		else if(self.color == 'red'){
+			self.x = Math.random() * 500;
+			self.y = Math.random() * HEIGHT;
+		}
+		self.hp = self.hpMax;
+		self.class = "Basic";
+		self.upgrade = false;
 	}
 	self.getInitPack = function(){
 		return {
@@ -255,6 +269,7 @@ Player = function(param){
 			id:self.id,
 			direction:self.direction,
 			hp:self.hp,
+			hpMax:self.hpMax,
 			score:self.score,
 			map:self.map,
 			reload:self.reload,
@@ -275,6 +290,7 @@ Player.onConnect = function(socket,username){
 	}
 	var player = Player({
 		id:socket.id,
+		socket:socket,
 		map:map,
 		username:username,
 		socket:socket,
@@ -313,6 +329,29 @@ Player.onConnect = function(socket,username){
 		player.x = WIDTH / 2;
 		player.y = HEIGHT / 2;
 	});
+
+	socket.on('playerUpdate',function(data){
+		player.upgrade = false;
+		if(data === 'Archer'){
+			player.class = 'Archer';
+		}
+		if(data === 'Sniper'){
+			player.class = 'Sniper';
+			player.hp = 200;
+			player.hpMax = 200;
+			player.arrowDamage = 10;
+			player.arrowAccuracy = 1;
+			player.reloadTime = 0.3;
+		}
+		if(data === 'Ranger'){
+			player.class = 'Ranger';
+			player.hp = 250;
+			player.hpMax = 250;
+			player.arrowDamage = 5;
+			player.arrowAccuracy = 2;
+			player.reloadTime = 2;
+		}
+	})
 	
 	socket.on('sendMsgToServer',function(data){
 		console.log(player.username + ' messaged all \'' + data + '\' in chat.');
@@ -372,7 +411,7 @@ Player.update = function(id){
 	var socketPlayer = Player.list[id];
 	for(var j in Player.list){
 		var player = Player.list[j]
-		if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 100 < player.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 100 > player.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 100 < player.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 100 > player.y && socketPlayer.map === player.map){
+		if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < player.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > player.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < player.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > player.y && socketPlayer.map === player.map){
 			pack.push(player.getUpdatePack());
 		}
 	}
@@ -385,7 +424,7 @@ Arrow = function(param){
 	self.spdY = Math.sin(param.angle/180 * Math.PI) * 30 + param.addSpdY;
 	self.parent = param.id;
 	self.hp = 3;
-	self.pentration = 0.01;
+	self.pentration = 0.001;
 	self.damage = param.damage;
 	self.radius = 15;
 	self.type = "Arrow";
@@ -437,12 +476,12 @@ Arrow.update = function(id){
 		var arrow = Arrow.list[j];
 		if(arrow.toRemove){
 			console.log(Player.list[arrow.parent].username + '\'s arrow(' + arrow.id + ') got deleted.');
-			delete Arrow.list[i];
-			delete Entity.list[i];
+			delete Arrow.list[j];
+			delete Entity.list[j];
 			removePack.arrow.push(arrow.id);
 		}
 		else{
-			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 100 < arrow.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 100 > arrow.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 100 < arrow.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 100 > arrow.y && socketPlayer.map === arrow.map){
+			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < arrow.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > arrow.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < arrow.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > arrow.y && socketPlayer.map === arrow.map){
 				pack.push(arrow.getUpdatePack());
 			}
 		}
@@ -466,6 +505,7 @@ Shape = function(param){
 	self.damage = 2;
 	self.radius = 30;
 	self.type = "Shape";
+	self.reload = 0;
 	self.shapeSize = param.type;
 	if(self.shapeSize === 0){
 		self.hp = 10;
@@ -497,6 +537,16 @@ Shape = function(param){
 		self.getPotionChance = 0.8;
 		self.getPotionAmount = 50;
 	}
+	else{
+		self.hp = 500;
+		self.hpMax = 500;
+		self.pentration = 0;
+		self.damage = 5;
+		self.radius = 120;
+		self.score = 5000;
+		self.getPotionChance = 0.8;
+		self.getPotionAmount = 50;
+	}
 	self.color = {inside:'#790000',outside:'#550000'};
 	self.color = 'brown';
 	self.toRemove = false;
@@ -504,6 +554,7 @@ Shape = function(param){
 	var super_update = self.update;
 	self.update = function(){
 		super_update();
+		self.updateAttack();
 		if(self.x < -15)
 			self.x = -15;
 		if(self.x > WIDTH + 15)
@@ -521,6 +572,13 @@ Shape = function(param){
 		}
 		if(self.hp < 1){
 			self.toRemove = true;
+		}
+	}
+	self.updateAttack = function(){
+		self.reload += 1;
+		if(self.reload > 150){
+			for(var i = 0; i < 4; i++){
+			}
 		}
 	}
 	self.getInitPack = function(){
@@ -557,12 +615,13 @@ Shape.update = function(id){
 		var shape = Shape.list[j];
 		if(shape.toRemove){
 			console.log('Shape(' + shape.id + ') got deleted.');
-			delete Shape.list[i];
-			delete Entity.list[i];
+			delete Shape.list[j];
+			delete Entity.list[j];
+			Shapes -= 1;
 			removePack.shape.push(shape.id);
 		}
 		else{
-			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 100 < shape.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 100 > shape.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 100 < shape.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 100 > shape.y && socketPlayer.map === shape.map){
+			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < shape.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > shape.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < shape.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > shape.y && socketPlayer.map === shape.map){
 				pack.push(shape.getUpdatePack());
 			}
 		}
@@ -570,6 +629,147 @@ Shape.update = function(id){
 	return pack;
 }
 Shape.getAllInitPack = function(){
+	var shapes = [];
+	for(var i in Shape.list)
+		shapes.push(Shape.list[i].getInitPack())
+	return shapes;
+}
+
+
+ShapeWeapon = function(param){
+	var self = Entity(param);
+	self.id = Math.random();
+	self.spdX = 0;
+	self.spdY = 0;
+	self.hp = 10;
+	self.hpMax = 10;
+	self.pentration = 0;
+	self.damage = 2;
+	self.radius = 30;
+	self.type = "Shape";
+	self.reload = 0;
+	self.shapeSize = param.type;
+	if(self.shapeSize === 0){
+		self.hp = 10;
+		self.hpMax = 10;
+		self.pentration = 0;
+		self.damage = 2;
+		self.radius = 30;
+		self.score = 5;
+		self.getPotionChance = 0.2;
+		self.getPotionAmount = 1;
+	}
+	else if(self.shapeSize === 1){
+		self.hp = 50;
+		self.hpMax = 50;
+		self.pentration = 0;
+		self.damage = 2;
+		self.radius = 60;
+		self.score = 50;
+		self.getPotionChance = 1;
+		self.getPotionAmount = 1;
+	}
+	else if(self.shapeSize === 2){
+		self.hp = 500;
+		self.hpMax = 500;
+		self.pentration = 0;
+		self.damage = 5;
+		self.radius = 120;
+		self.score = 5000;
+		self.getPotionChance = 0.8;
+		self.getPotionAmount = 50;
+	}
+	else{
+		self.hp = 500;
+		self.hpMax = 500;
+		self.pentration = 0;
+		self.damage = 5;
+		self.radius = 120;
+		self.score = 5000;
+		self.getPotionChance = 0.8;
+		self.getPotionAmount = 50;
+	}
+	self.color = {inside:'#790000',outside:'#550000'};
+	self.color = 'brown';
+	self.toRemove = false;
+	self.direction = 0;
+	var super_update = self.update;
+	self.update = function(){
+		super_update();
+		self.updateAttack();
+		if(self.x < -15)
+			self.x = -15;
+		if(self.x > WIDTH + 15)
+			self.x = WIDTH + 15;
+		if(self.y < -15)
+			self.y = -15;
+		if(self.y > HEIGHT + 15)
+			self.y = HEIGHT + 15;
+		self.direction += 1;
+		self.spdX += (Math.random() - 0.5) * 2;
+		self.spdY += (Math.random() - 0.5) * 2;
+		
+		if(self.hp < self.hpMax){
+			self.hp += 0.05;
+		}
+		if(self.hp < 1){
+			self.toRemove = true;
+		}
+	}
+	self.updateAttack = function(){
+		self.reload += 1;
+		if(self.reload > 150){
+			for(var i = 0; i < 4; i++){
+			}
+		}
+	}
+	self.getInitPack = function(){
+		return{
+			x:self.x,
+			y:self.y,
+			id:self.id,
+			direction:self.direction,
+			map:self.map,
+			color:self.color,
+			shapeSize:self.shapeSize,
+		}
+	}
+	self.getUpdatePack = function(){
+		return {
+			x:self.x,
+			y:self.y,
+			id:self.id,
+			direction:self.direction,
+			hp:self.hp,
+		}
+	}
+	Shape.list[self.id] = self;
+	Entity.list[self.id] = self;
+	initPack.shape.push(self.getInitPack());
+	return self;
+}
+ShapeWeapon.list = {};
+ShapeWeapon.update = function(id){
+	var pack = [];
+	var socketPlayer = Player.list[id];
+	for(var j in Shape.list){
+		var shape = Shape.list[j];
+		if(shape.toRemove){
+			console.log('Shape(' + shape.id + ') got deleted.');
+			delete Shape.list[j];
+			delete Entity.list[j];
+			Shapes -= 1;
+			removePack.shape.push(shape.id);
+		}
+		else{
+			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < shape.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > shape.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < shape.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > shape.y && socketPlayer.map === shape.map){
+				pack.push(shape.getUpdatePack());
+			}
+		}
+	}
+	return pack;
+}
+ShapeWeapon.getAllInitPack = function(){
 	var shapes = [];
 	for(var i in Shape.list)
 		shapes.push(Shape.list[i].getInitPack())
