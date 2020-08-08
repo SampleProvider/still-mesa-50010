@@ -114,14 +114,14 @@ Item("woodPotion","Wood Potion",function(player){
 
 Item("superAttack","Super Attack",function(player){
     for(var i = 0;i < 360; i += 10){
-        player.shootArrow(i,i,false);
+        player.shootWeapon(i,i,false);
     }
-	player.inventory.removeItem("superAttack",1);
+	//player.inventory.removeItem("superAttack",1);
 });
 Item("arrowRain","Arrow Rain!",function(player){
     for(var i = -15;i < 15; i += 1){
         var y = Math.random() * 2 - 1;
-        player.shootArrow(i + y + player.direction,i + y + player.direction,false);
+        player.shootWeapon(i + y + player.direction,i + y + player.direction,false);
     }
 });
 Item("speedBoost","Speed Boost!",function(player){

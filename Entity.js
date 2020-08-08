@@ -4,8 +4,8 @@ COLORS = [{inside:'#F14E54',outside:'#B43A3F'},{inside:'#0088EE',outside:'#0085A
 COLOR = ['red','blue'];
 COLORCOUNT = [0,0]
 
-initPack = {player:[],arrow:[],shape:[]};
-removePack = {player:[],arrow:[],shape:[]};
+initPack = {player:[],weapon:[],shape:[]};
+removePack = {player:[],weapon:[],shape:[]};
 
 Entity = function(param){
 	var self = {
@@ -63,35 +63,35 @@ Entity.getFrameUpdateData = function(){
 	var pack = {
 		initPack:{
 			player:initPack.player,
-			arrow:initPack.arrow,
+			weapon:initPack.weapon,
 			shape:initPack.shape,
 		},
 		updatePack:[],
 		removePack:{
 			player:removePack.player,
-			arrow:removePack.arrow,
+			weapon:removePack.weapon,
 			shape:removePack.shape,
 		}
 	}
 	for(var i in Player.list){
 		pack.updatePack[i] = {
 			player:Player.update(i),
-			arrow:Arrow.update(i),
+			weapon:Weapon.update(i),
 			shape:Shape.update(i),
 		}
 		Player.list[i].update();
 	}
-	for(var i in Arrow.list){
-		Arrow.list[i].update();
+	for(var i in Weapon.list){
+		Weapon.list[i].update();
 	}
 	for(var i in Shape.list){
 		Shape.list[i].update();
 	}
 	initPack.player = [];
-	initPack.arrow = [];
+	initPack.weapon = [];
 	initPack.shape = [];
 	removePack.player = [];
-	removePack.arrow = [];
+	removePack.weapon = [];
 	removePack.shape = [];
 	return pack;
 }
@@ -138,8 +138,12 @@ Player = function(param){
 	self.hpMax = 100;
 	self.regen = 0.01;
 	self.damage = 1;
-	self.arrowDamage = 3;
-	self.arrowAccuracy = 10;
+	self.weaponDamage = 3;
+	self.weaponAccuracy = 10;
+	self.weaponPentration = 0.1;
+	self.weaponSpeed = 20;
+	self.weaponHp = 3;
+	self.weaponType = 1;
 	
 	self.score = 0;
 	
@@ -189,13 +193,13 @@ Player = function(param){
 		if(self.pressingAttack && self.class !== "Basic"){
 			if(self.reload > 15){
 				self.reload = -5;
-				var error = Math.random() * self.arrowAccuracy;
-				self.shootArrow(self.direction + error,self.direction + error,true);
+				var error = Math.random() * self.weaponAccuracy;
+				self.shootWeapon(self.direction + error,self.direction + error,true);
 			}
 		}
 	}
-	self.shootArrow = function(angle,direction,doRecoil){
-		var arrow = Arrow({
+	self.shootWeapon = function(angle,direction,doRecoil){
+		var weapon = Weapon({
 			id:self.id,
 			angle:angle,
 			direction:direction,
@@ -203,7 +207,11 @@ Player = function(param){
 			y:self.y + Math.sin(angle/180*Math.PI) * 20,
 			map:self.map,
 			color:self.color,
-			damage:self.arrowDamage,
+			damage:self.weaponDamage,
+			pentration:self.weaponPentration,
+			speed:self.weaponSpeed,
+			hp:self.weaponHp,
+			type:self.weaponType,
 			addSpdX:self.spdX,
 			addSpdY:self.spdY,
 		});
@@ -212,7 +220,7 @@ Player = function(param){
 			self.spdY -= Math.sin(angle/180*Math.PI) * self.recoil;
 
 		}
-		console.log(self.username + ' shot arrow(' + arrow.id + ').');
+		console.log(self.username + ' shot weapon(' + weapon.id + ').');
 	}
 	self.updateClass = function(){
 		if(self.class === "Basic" && self.upgrade === false){
@@ -225,12 +233,6 @@ Player = function(param){
 			self.upgrade = true;
 			self.socket.emit('updateHUD',{
 				state:'upgrade1',
-			});
-		}
-		if(self.xp > 200 && self.class === "Sniper" && self.upgrade === false){
-			self.upgrade = true;
-			self.socket.emit('updateHUD',{
-				state:'upgradeN',
 			});
 		}
 	}
@@ -303,20 +305,29 @@ Player.onConnect = function(socket,username){
 	});
 
 	socket.on('keyPress',function(data){
-		if(data.inputId === 'left')
+		if(data.inputId === 'left'){
 			player.pressingLeft = data.state;
-		else if(data.inputId === 'right')
+		}
+		else if(data.inputId === 'right'){
 			player.pressingRight = data.state;
-		else if(data.inputId === 'up')
+		}
+		else if(data.inputId === 'up'){
 			player.pressingUp = data.state;
-		else if(data.inputId === 'down')
+		}
+		else if(data.inputId === 'down'){
 			player.pressingDown = data.state;
-		else if(data.inputId === 'attack')
+		}
+		else if(data.inputId === 'attack'){
 			player.pressingAttack = data.state;
-		else if(data.inputId === 'direction')
+		}
+		else if(data.inputId === 'direction'){
 			player.direction = (Math.atan2(data.state.y,data.state.x - 18) / Math.PI * 180);
 			player.mouseX = data.state.x;
 			player.mouseY = data.state.y;
+		}
+		else if(data.inputId === 'levelUp'){
+			player.score += 10;
+		}
 	});
 	
 	socket.on('changeMap',function(data){
@@ -339,16 +350,20 @@ Player.onConnect = function(socket,username){
 			player.class = 'Sniper';
 			player.hp = 200;
 			player.hpMax = 200;
-			player.arrowDamage = 10;
-			player.arrowAccuracy = 1;
+			player.weaponDamage = 10;
+			player.weaponAccuracy = 1;
+			player.weaponSpeed = 50;
+			player.weaponPentration = 0.05;
 			player.reloadTime = 0.3;
 		}
 		if(data === 'Ranger'){
 			player.class = 'Ranger';
 			player.hp = 250;
 			player.hpMax = 250;
-			player.arrowDamage = 5;
-			player.arrowAccuracy = 2;
+			player.weaponDamage = 5;
+			player.weaponAccuracy = 2;
+			player.weaponSpeed = 30;
+			player.weaponPentration = 0.05;
 			player.reloadTime = 2;
 		}
 	})
@@ -379,7 +394,7 @@ Player.onConnect = function(socket,username){
 	socket.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
-		arrow:Arrow.getAllInitPack(),
+		weapon:Weapon.getAllInitPack(),
 		shape:Shape.getAllInitPack(),
 	});
 }
@@ -394,12 +409,12 @@ Player.onDisconnect = function(socket){
 		console.log(Player.list[socket.id].username + ' left.');
 		COLORCOUNT[Player.list[socket.id].colorid] -= 1;
 	}
-	for(var i in Arrow.list){
-		if(Arrow.list[i].parent === socket.id){
-			removePack.arrow.push(i);
-			delete Arrow.list[i];
+	for(var i in Weapon.list){
+		if(Weapon.list[i].parent === socket.id){
+			removePack.weapon.push(i);
+			delete Weapon.list[i];
 			delete Entity.list[i];
-			console.log(Player.list[socket.id].username + '\'s arrow got deleted.');
+			console.log(Player.list[socket.id].username + '\'s weapon got deleted.');
 		}
 	}
 	removePack.player.push(socket.id);
@@ -417,17 +432,17 @@ Player.update = function(id){
 	}
 	return pack;
 }
-Arrow = function(param){
+Weapon = function(param){
 	var self = Entity(param);
 	self.id = Math.random();
-	self.spdX = Math.cos(param.angle/180 * Math.PI) * 30 + param.addSpdX;
-	self.spdY = Math.sin(param.angle/180 * Math.PI) * 30 + param.addSpdY;
+	self.spdX = Math.cos(param.angle/180 * Math.PI) * param.speed + param.addSpdX;
+	self.spdY = Math.sin(param.angle/180 * Math.PI) * param.speed + param.addSpdY;
 	self.parent = param.id;
-	self.hp = 3;
-	self.pentration = 0.001;
+	self.hp = param.hp;
+	self.pentration = param.pentration;
 	self.damage = param.damage;
 	self.radius = 15;
-	self.type = "Arrow";
+	self.type = "Weapon";
 	self.color = param.color;
 	self.direction = param.direction;
 	self.timer = 0;
@@ -463,36 +478,36 @@ Arrow = function(param){
 			direction:self.direction,
 		}
 	}
-	Arrow.list[self.id] = self;
+	Weapon.list[self.id] = self;
 	Entity.list[self.id] = self;
-	initPack.arrow.push(self.getInitPack());
+	initPack.weapon.push(self.getInitPack());
 	return self;
 }
-Arrow.list = {};
-Arrow.update = function(id){
+Weapon.list = {};
+Weapon.update = function(id){
 	var pack = [];
 	var socketPlayer = Player.list[id];
-	for(var j in Arrow.list){
-		var arrow = Arrow.list[j];
-		if(arrow.toRemove){
-			console.log(Player.list[arrow.parent].username + '\'s arrow(' + arrow.id + ') got deleted.');
-			delete Arrow.list[j];
+	for(var j in Weapon.list){
+		var weapon = Weapon.list[j];
+		if(weapon.toRemove){
+			console.log(Player.list[weapon.parent].username + '\'s weapon(' + weapon.id + ') got deleted.');
+			delete Weapon.list[j];
 			delete Entity.list[j];
-			removePack.arrow.push(arrow.id);
+			removePack.weapon.push(weapon.id);
 		}
 		else{
-			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < arrow.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > arrow.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < arrow.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > arrow.y && socketPlayer.map === arrow.map){
-				pack.push(arrow.getUpdatePack());
+			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < weapon.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > weapon.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < weapon.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > weapon.y && socketPlayer.map === weapon.map){
+				pack.push(weapon.getUpdatePack());
 			}
 		}
 	}
 	return pack;
 }
-Arrow.getAllInitPack = function(){
-	var arrows = [];
-	for(var i in Arrow.list)
-		arrows.push(Arrow.list[i].getInitPack())
-	return arrows;
+Weapon.getAllInitPack = function(){
+	var weapons = [];
+	for(var i in Weapon.list)
+		weapons.push(Weapon.list[i].getInitPack())
+	return weapons;
 }
 Shape = function(param){
 	var self = Entity(param);
@@ -812,19 +827,19 @@ updateCrashes = function(){
 			var q = Entity.list[j];
 			if(q.getDistance(p) < q.radius + p.radius && q.map === p.map && q !== p && q.hp > 0 && p.hp > 0){
 				if(p.map === 1 && q.map === 1){
-					if(p.type === "Arrow" && q.type === "Arrow"){
+					if(p.type === "Weapon" && q.type === "Weapon"){
 						if(Player.list[p.parent] !== Player.list[q.parent]){
 							p.hp -= q.damage;
 							q.hp -= p.damage;
 						}
 					}
-					else if(q.type === "Arrow"){
+					else if(q.type === "Weapon"){
 						if(Player.list[q.parent] !== p){
 							p.hp -= q.damage;
 							q.hp -= p.damage;
 						}
 					}
-					else if(p.type === "Arrow"){
+					else if(p.type === "Weapon"){
 						if(Player.list[p.parent] !== q){
 							p.hp -= q.damage;
 							q.hp -= p.damage;
@@ -841,7 +856,7 @@ updateCrashes = function(){
 				}
 				if(q.hp <= 0){
 					if(q.type === "Shape"){
-						if(p.type === "Arrow"){
+						if(p.type === "Weapon"){
 							if(Player.list[p.parent]){
 								Player.list[p.parent].score += Math.round(q.score/2) + 1;
 								if(Math.random() < q.getPotionChance){
@@ -857,7 +872,7 @@ updateCrashes = function(){
 						}
 					}
 					else{
-						if(p.type === "Arrow"){
+						if(p.type === "Weapon"){
 							if(Player.list[p.parent]){
 								Player.list[p.parent].score += Math.round(q.score/2) + 1;
 							}
@@ -869,7 +884,7 @@ updateCrashes = function(){
 				}
 				if(p.hp <= 0){
 					if(p.type === "Shape"){
-						if(q.type === "Arrow"){
+						if(q.type === "Weapon"){
 							if(Player.list[q.parent]){
 								Player.list[q.parent].score += Math.round(p.score/2) + 1;
 								if(Math.random() < p.getPotionChance){
@@ -885,7 +900,7 @@ updateCrashes = function(){
 						}
 					}
 					else{
-						if(q.type === "Arrow"){
+						if(q.type === "Weapon"){
 							if(Player.list[q.parent]){
 								Player.list[q.parent].score += Math.round(p.score/2) + 1;
 							}
@@ -913,7 +928,7 @@ var mapCheck = function(param){
     for(i in Entity.list){
 		entity = Entity.list[i];
         if(entity.color !== param.color && entity.x > param.x && entity.x < param.x + param.width && entity.y > param.y && entity.y < param.y + param.height && entity.map === param.map){
-			if(entity.type === "Arrow"){
+			if(entity.type === "Weapon"){
 				entity.hp -= entity.pentration * 100;
 			}
 			else if(entity.type === "Shape"){
@@ -923,17 +938,6 @@ var mapCheck = function(param){
 				entity.hp -= 10;
 			}
         }
-        /*if(entity.color !== param.color && entity.x > param.x && entity.y > param.y && entity.map === param.map){
-			if(entity.type === "Arrow"){
-				entity.hp -= entity.pentration * 100;
-			}
-			else if(entity.type === "Shape"){
-				entity.hp -= 1;
-			}
-			else{
-				entity.hp -= 10;
-			}
-        }*/
     }
 }
 

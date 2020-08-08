@@ -2,14 +2,14 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width">
-	<title>Maitian Game 0.8.0</title>
+	<title>Maitian Game Snapshot 080f1a</title>
 	<link href="client/style.css" rel="stylesheet" type="text/css" >
 	<style>
 	</style>
 </head>
 <body>
 <div id="signDiv">
-	<h1 class = "SignIn">Maitian Game 0.8.0</h1>
+	<h1 class = "SignIn">Maitian Game Snapshot 080f1a</h1>
 	<br><br>
 	Username: <input id="signDiv-username" class = "SignIn" type="text"></input><br>
 	<!--Password: <input id="signDiv-password" class = "SignIn" type="password"></input><br>-->
@@ -19,7 +19,7 @@
 	
 	<br><br><br>
 	<h2 class = "SignIn">Changelog:</h2 class = "SignIn"><br>
-	<p class = "SignIn">Added Classes<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.<br><br>Also check out Tianmu Game <a href="https://www.khanacademy.org/computer-programming/test/6067102266245120">here</a>!</p class = "SignIn">
+	<p class = "SignIn">Fixed Bugs<br><br>Warning: This version might be unstable and have glitches. You can play the official version <a href="https://still-mesa-50010.herokuapp.com/">here</a>.<br><br>Also check out Tianmu Game <a href="https://www.khanacademy.org/computer-programming/test/6067102266245120">here</a>!</p class = "SignIn">
 </div>
 
 <div id="signError" style="display:none;">
@@ -217,7 +217,6 @@
 		self.y = initPack.y;
 		self.direction = initPack.direction;
 		self.color = initPack.color;
-		console.log(self.color);
 		self.hp = initPack.hp;
 		self.hpMax = initPack.hpMax;
 		self.score = initPack.score;
@@ -424,6 +423,15 @@
 						ctx.translate(- 23 + reload * 3.5,0);
 					}
 					break;
+				case "Warrior":
+					ctx.beginPath();
+					ctx.moveTo(15,40 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3.3,0);
+					ctx.moveTo(15,-40 * Math.sqrt(3));
+					ctx.lineTo(15 - reload * 3.3,0);
+					ctx.lineWidth = 3;
+					ctx.stroke();
+					break;
 			}
 			
 			//ctx.drawImage(Img.player,-30,-30);
@@ -470,7 +478,7 @@
    			i.remove();
 		}
 	}
-	var Arrow = function(initPack){
+	var Weapon = function(initPack){
 		var self = {};
 		self.id = initPack.id;
 		self.x = initPack.x;
@@ -546,10 +554,10 @@
 			self.doDraw -= 1;
 		}
 		
-		Arrow.list[self.id] = self;
+		Weapon.list[self.id] = self;
 		return self;
 	}
-	Arrow.list = {};
+	Weapon.list = {};
 	
 	var Shape = function(initPack){
 		var self = {};
@@ -635,8 +643,8 @@
 		for(var i = 0;i < data.player.length;i++){
 			new Player(data.player[i]);
 		}
-		for(var i = 0;i < data.arrow.length;i++){
-			new Arrow(data.arrow[i]);
+		for(var i = 0;i < data.weapon.length;i++){
+			new Weapon(data.weapon[i]);
 		}
 		for(var i = 0;i < data.shape.length;i++){
 			new Shape(data.shape[i]);
@@ -671,9 +679,9 @@
 						p.xp = pack.xp;
 				}
 			}
-			for(var i = 0;i < data.arrow.length;i++){
-				var pack = data.arrow[i];
-				var b = Arrow.list[pack.id];
+			for(var i = 0;i < data.weapon.length;i++){
+				var pack = data.weapon[i];
+				var b = Weapon.list[pack.id];
 				if(b){
 					b.doDraw = 2;
 					if(pack.x !== undefined)
@@ -705,8 +713,8 @@
 		for(var i = 0;i < data.player.length;i++){
 			delete Player.list[data.player[i]];
 		}
-		for(var i = 0;i < data.arrow.length;i++){
-			delete Arrow.list[data.arrow[i]];
+		for(var i = 0;i < data.weapon.length;i++){
+			delete Weapon.list[data.weapon[i]];
 		}
 		for(var i = 0;i < data.shape.length;i++){
 			delete Shape.list[data.shape[i]];
@@ -732,8 +740,8 @@
 			return;
 		ctx.clearRect(0,0,WIDTH,HEIGHT);
 		drawAllMap();
-		for(var i in Arrow.list){
-			Arrow.list[i].draw();
+		for(var i in Weapon.list){
+			Weapon.list[i].draw();
 		}
 		for(var i in Shape.list){
 			Shape.list[i].draw();
@@ -834,6 +842,8 @@
 			socket.emit('keyPress',{inputId:'left',state:true});
 		else if(event.keyCode === 87) //w
 			socket.emit('keyPress',{inputId:'up',state:true});
+		else if(event.keyCode === 75) //w
+			socket.emit('keyPress',{inputId:'levelUp',state:true});
 	}
 	document.onkeyup = function(event){
 		if(event.keyCode === 68) //d
@@ -844,6 +854,8 @@
 			socket.emit('keyPress',{inputId:'left',state:false});
 		else if(event.keyCode === 87) //w
 			socket.emit('keyPress',{inputId:'up',state:false});
+		else if(event.keyCode === 75) //w
+			socket.emit('keyPress',{inputId:'levelUp',state:false});
 	}
 	
 	document.onmousedown = function(event){
