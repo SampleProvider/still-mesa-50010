@@ -4,8 +4,8 @@ COLORS = [{inside:'#F14E54',outside:'#B43A3F'},{inside:'#0088EE',outside:'#0085A
 COLOR = ['red','blue'];
 COLORCOUNT = [0,0]
 
-initPack = {player:[],weapon:[],shape:[]};
-removePack = {player:[],weapon:[],shape:[]};
+initPack = {player:[],projectile:[],shape:[]};
+removePack = {player:[],projectile:[],shape:[]};
 
 Entity = function(param){
 	var self = {
@@ -63,35 +63,35 @@ Entity.getFrameUpdateData = function(){
 	var pack = {
 		initPack:{
 			player:initPack.player,
-			weapon:initPack.weapon,
+			projectile:initPack.projectile,
 			shape:initPack.shape,
 		},
 		updatePack:[],
 		removePack:{
 			player:removePack.player,
-			weapon:removePack.weapon,
+			projectile:removePack.projectile,
 			shape:removePack.shape,
 		}
 	}
 	for(var i in Player.list){
 		pack.updatePack[i] = {
 			player:Player.update(i),
-			weapon:Weapon.update(i),
+			projectile:Projectile.update(i),
 			shape:Shape.update(i),
 		}
 		Player.list[i].update();
 	}
-	for(var i in Weapon.list){
-		Weapon.list[i].update();
+	for(var i in Projectile.list){
+		Projectile.list[i].update();
 	}
 	for(var i in Shape.list){
 		Shape.list[i].update();
 	}
 	initPack.player = [];
-	initPack.weapon = [];
+	initPack.projectile = [];
 	initPack.shape = [];
 	removePack.player = [];
-	removePack.weapon = [];
+	removePack.projectile = [];
 	removePack.shape = [];
 	return pack;
 }
@@ -132,18 +132,14 @@ Player = function(param){
 	self.maxSpd = 5;
 	self.reload = 10;
 	self.recoil = 5;
-	self.reloadTime = 1;
+	self.reloadTime = 0;
 	
-	self.hp = 100;
-	self.hpMax = 100;
+	self.hp = 10;
+	self.hpMax = 10;
 	self.regen = 0.01;
 	self.damage = 1;
-	self.weaponDamage = 3;
-	self.weaponAccuracy = 10;
-	self.weaponPentration = 0.1;
-	self.weaponSpeed = 20;
-	self.weaponHp = 3;
-	self.weaponType = 1;
+	self.projectileType = 1;
+	self.projectileAccuracy = 10;
 	
 	self.score = 0;
 	
@@ -193,13 +189,13 @@ Player = function(param){
 		if(self.pressingAttack && self.class !== "Basic"){
 			if(self.reload > 15){
 				self.reload = -5;
-				var error = Math.random() * self.weaponAccuracy;
-				self.shootWeapon(self.direction + error,self.direction + error,true);
+				var error = Math.random() * self.projectileAccuracy;
+				self.shootProjectile(self.direction + error,self.direction + error,true);
 			}
 		}
 	}
-	self.shootWeapon = function(angle,direction,doRecoil){
-		var weapon = Weapon({
+	self.shootProjectile = function(angle,direction,doRecoil){
+		var projectile = Projectile({
 			id:self.id,
 			angle:angle,
 			direction:direction,
@@ -207,11 +203,7 @@ Player = function(param){
 			y:self.y + Math.sin(angle/180*Math.PI) * 20,
 			map:self.map,
 			color:self.color,
-			damage:self.weaponDamage,
-			pentration:self.weaponPentration,
-			speed:self.weaponSpeed,
-			hp:self.weaponHp,
-			type:self.weaponType,
+			projectileType:self.projectileType,
 			addSpdX:self.spdX,
 			addSpdY:self.spdY,
 		});
@@ -220,7 +212,7 @@ Player = function(param){
 			self.spdY -= Math.sin(angle/180*Math.PI) * self.recoil;
 
 		}
-		console.log(self.username + ' shot weapon(' + weapon.id + ').');
+		console.log(self.username + ' shot projectile(' + projectile.id + ').');
 	}
 	self.updateClass = function(){
 		if(self.class === "Basic" && self.upgrade === false){
@@ -343,28 +335,37 @@ Player.onConnect = function(socket,username){
 
 	socket.on('playerUpdate',function(data){
 		player.upgrade = false;
+		if(data === 'Warrior'){
+			player.class = 'Warrior';
+			player.hp = 100;
+			player.hpMax = 100;
+			player.projectileAccuracy = 10;
+			player.projectileType = 1;
+			player.reloadTime = 1;
+		}
 		if(data === 'Archer'){
 			player.class = 'Archer';
-		}
-		if(data === 'Sniper'){
-			player.class = 'Sniper';
-			player.hp = 200;
-			player.hpMax = 200;
-			player.weaponDamage = 10;
-			player.weaponAccuracy = 1;
-			player.weaponSpeed = 50;
-			player.weaponPentration = 0.05;
-			player.reloadTime = 0.3;
+			player.hp = 100;
+			player.hpMax = 100;
+			player.projectileAccuracy = 10;
+			player.projectileType = 1;
+			player.reloadTime = 1;
 		}
 		if(data === 'Ranger'){
 			player.class = 'Ranger';
 			player.hp = 250;
 			player.hpMax = 250;
-			player.weaponDamage = 5;
-			player.weaponAccuracy = 2;
-			player.weaponSpeed = 30;
-			player.weaponPentration = 0.05;
+			player.projectileAccuracy = 2;
+			player.projectileType = 2;
 			player.reloadTime = 2;
+		}
+		if(data === 'Sniper'){
+			player.class = 'Sniper';
+			player.hp = 200;
+			player.hpMax = 200;
+			player.projectileAccuracy = 1;
+			player.projectileType = 3;
+			player.reloadTime = 0.3;
 		}
 	})
 	
@@ -394,7 +395,7 @@ Player.onConnect = function(socket,username){
 	socket.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
-		weapon:Weapon.getAllInitPack(),
+		projectile:Projectile.getAllInitPack(),
 		shape:Shape.getAllInitPack(),
 	});
 }
@@ -409,12 +410,12 @@ Player.onDisconnect = function(socket){
 		console.log(Player.list[socket.id].username + ' left.');
 		COLORCOUNT[Player.list[socket.id].colorid] -= 1;
 	}
-	for(var i in Weapon.list){
-		if(Weapon.list[i].parent === socket.id){
-			removePack.weapon.push(i);
-			delete Weapon.list[i];
+	for(var i in Projectile.list){
+		if(Projectile.list[i].parent === socket.id){
+			removePack.projectile.push(i);
+			delete Projectile.list[i];
 			delete Entity.list[i];
-			console.log(Player.list[socket.id].username + '\'s weapon got deleted.');
+			console.log(Player.list[socket.id].username + '\'s projectile got deleted.');
 		}
 	}
 	removePack.player.push(socket.id);
@@ -432,17 +433,35 @@ Player.update = function(id){
 	}
 	return pack;
 }
-Weapon = function(param){
+Projectile = function(param){
 	var self = Entity(param);
 	self.id = Math.random();
-	self.spdX = Math.cos(param.angle/180 * Math.PI) * param.speed + param.addSpdX;
-	self.spdY = Math.sin(param.angle/180 * Math.PI) * param.speed + param.addSpdY;
 	self.parent = param.id;
-	self.hp = param.hp;
-	self.pentration = param.pentration;
-	self.damage = param.damage;
+	self.projectileType = param.projectileType;
+	switch(self.projectileType){
+		case 1:
+			self.hp = 3;
+			self.damage = 3;
+			self.speed = 20;
+			self.pentration = 0.1;
+			break;
+		case 2:
+			self.hp = 5;
+			self.damage = 5;
+			self.speed = 30;
+			self.pentration = 0.05;
+			break;
+		case 3:
+			self.hp = 10;
+			self.damage = 10;
+			self.speed = 50;
+			self.pentration = 0.05;
+			break;	
+	}
+	self.spdX = Math.cos(param.angle/180 * Math.PI) * self.speed + param.addSpdX;
+	self.spdY = Math.sin(param.angle/180 * Math.PI) * self.speed + param.addSpdY;
 	self.radius = 15;
-	self.type = "Weapon";
+	self.type = "Projectile";
 	self.color = param.color;
 	self.direction = param.direction;
 	self.timer = 0;
@@ -456,8 +475,6 @@ Weapon = function(param){
 		if(self.hp < 1){
 			self.toRemove = true;
 		}
-		console.log(self.id);
-		console.log(self.hp);
 	}
 	self.getInitPack = function(){
 		return {
@@ -466,6 +483,7 @@ Weapon = function(param){
 			id:self.id,
 			direction:self.direction,
 			color:self.color,
+			projectileType:self.projectileType,
 			map:self.map,
 			parent:self.parent,
 		}
@@ -478,36 +496,36 @@ Weapon = function(param){
 			direction:self.direction,
 		}
 	}
-	Weapon.list[self.id] = self;
+	Projectile.list[self.id] = self;
 	Entity.list[self.id] = self;
-	initPack.weapon.push(self.getInitPack());
+	initPack.projectile.push(self.getInitPack());
 	return self;
 }
-Weapon.list = {};
-Weapon.update = function(id){
+Projectile.list = {};
+Projectile.update = function(id){
 	var pack = [];
 	var socketPlayer = Player.list[id];
-	for(var j in Weapon.list){
-		var weapon = Weapon.list[j];
-		if(weapon.toRemove){
-			console.log(Player.list[weapon.parent].username + '\'s weapon(' + weapon.id + ') got deleted.');
-			delete Weapon.list[j];
+	for(var j in Projectile.list){
+		var projectile = Projectile.list[j];
+		if(projectile.toRemove){
+			console.log(Player.list[projectile.parent].username + '\'s projectile(' + projectile.id + ') got deleted.');
+			delete Projectile.list[j];
 			delete Entity.list[j];
-			removePack.weapon.push(weapon.id);
+			removePack.projectile.push(projectile.id);
 		}
 		else{
-			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < weapon.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > weapon.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < weapon.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > weapon.y && socketPlayer.map === weapon.map){
-				pack.push(weapon.getUpdatePack());
+			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < projectile.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > projectile.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < projectile.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > projectile.y && socketPlayer.map === projectile.map){
+				pack.push(projectile.getUpdatePack());
 			}
 		}
 	}
 	return pack;
 }
-Weapon.getAllInitPack = function(){
-	var weapons = [];
-	for(var i in Weapon.list)
-		weapons.push(Weapon.list[i].getInitPack())
-	return weapons;
+Projectile.getAllInitPack = function(){
+	var projectiles = [];
+	for(var i in Projectile.list)
+		projectiles.push(Projectile.list[i].getInitPack())
+	return projectiles;
 }
 Shape = function(param){
 	var self = Entity(param);
@@ -651,145 +669,6 @@ Shape.getAllInitPack = function(){
 }
 
 
-ShapeWeapon = function(param){
-	var self = Entity(param);
-	self.id = Math.random();
-	self.spdX = 0;
-	self.spdY = 0;
-	self.hp = 10;
-	self.hpMax = 10;
-	self.pentration = 0;
-	self.damage = 2;
-	self.radius = 30;
-	self.type = "Shape";
-	self.reload = 0;
-	self.shapeSize = param.type;
-	if(self.shapeSize === 0){
-		self.hp = 10;
-		self.hpMax = 10;
-		self.pentration = 0;
-		self.damage = 2;
-		self.radius = 30;
-		self.score = 5;
-		self.getPotionChance = 0.2;
-		self.getPotionAmount = 1;
-	}
-	else if(self.shapeSize === 1){
-		self.hp = 50;
-		self.hpMax = 50;
-		self.pentration = 0;
-		self.damage = 2;
-		self.radius = 60;
-		self.score = 50;
-		self.getPotionChance = 1;
-		self.getPotionAmount = 1;
-	}
-	else if(self.shapeSize === 2){
-		self.hp = 500;
-		self.hpMax = 500;
-		self.pentration = 0;
-		self.damage = 5;
-		self.radius = 120;
-		self.score = 5000;
-		self.getPotionChance = 0.8;
-		self.getPotionAmount = 50;
-	}
-	else{
-		self.hp = 500;
-		self.hpMax = 500;
-		self.pentration = 0;
-		self.damage = 5;
-		self.radius = 120;
-		self.score = 5000;
-		self.getPotionChance = 0.8;
-		self.getPotionAmount = 50;
-	}
-	self.color = {inside:'#790000',outside:'#550000'};
-	self.color = 'brown';
-	self.toRemove = false;
-	self.direction = 0;
-	var super_update = self.update;
-	self.update = function(){
-		super_update();
-		self.updateAttack();
-		if(self.x < -15)
-			self.x = -15;
-		if(self.x > WIDTH + 15)
-			self.x = WIDTH + 15;
-		if(self.y < -15)
-			self.y = -15;
-		if(self.y > HEIGHT + 15)
-			self.y = HEIGHT + 15;
-		self.direction += 1;
-		self.spdX += (Math.random() - 0.5) * 2;
-		self.spdY += (Math.random() - 0.5) * 2;
-		
-		if(self.hp < self.hpMax){
-			self.hp += 0.05;
-		}
-		if(self.hp < 1){
-			self.toRemove = true;
-		}
-	}
-	self.updateAttack = function(){
-		self.reload += 1;
-		if(self.reload > 150){
-			for(var i = 0; i < 4; i++){
-			}
-		}
-	}
-	self.getInitPack = function(){
-		return{
-			x:self.x,
-			y:self.y,
-			id:self.id,
-			direction:self.direction,
-			map:self.map,
-			color:self.color,
-			shapeSize:self.shapeSize,
-		}
-	}
-	self.getUpdatePack = function(){
-		return {
-			x:self.x,
-			y:self.y,
-			id:self.id,
-			direction:self.direction,
-			hp:self.hp,
-		}
-	}
-	Shape.list[self.id] = self;
-	Entity.list[self.id] = self;
-	initPack.shape.push(self.getInitPack());
-	return self;
-}
-ShapeWeapon.list = {};
-ShapeWeapon.update = function(id){
-	var pack = [];
-	var socketPlayer = Player.list[id];
-	for(var j in Shape.list){
-		var shape = Shape.list[j];
-		if(shape.toRemove){
-			console.log('Shape(' + shape.id + ') got deleted.');
-			delete Shape.list[j];
-			delete Entity.list[j];
-			Shapes -= 1;
-			removePack.shape.push(shape.id);
-		}
-		else{
-			if(socketPlayer.x - socketPlayer.CANVASWIDTH / 2 - 500 < shape.x && socketPlayer.x + socketPlayer.CANVASWIDTH / 2 + 500 > shape.x && socketPlayer.y - socketPlayer.CANVASHEIGHT / 2 - 500 < shape.y && socketPlayer.y + socketPlayer.CANVASHEIGHT / 2 + 500 > shape.y && socketPlayer.map === shape.map){
-				pack.push(shape.getUpdatePack());
-			}
-		}
-	}
-	return pack;
-}
-ShapeWeapon.getAllInitPack = function(){
-	var shapes = [];
-	for(var i in Shape.list)
-		shapes.push(Shape.list[i].getInitPack())
-	return shapes;
-}
 spawnEntities = function(){
 	if(Math.random() < 0.02 && Shapes < 50){
 		Shapes += 1;
@@ -827,19 +706,19 @@ updateCrashes = function(){
 			var q = Entity.list[j];
 			if(q.getDistance(p) < q.radius + p.radius && q.map === p.map && q !== p && q.hp > 0 && p.hp > 0){
 				if(p.map === 1 && q.map === 1){
-					if(p.type === "Weapon" && q.type === "Weapon"){
+					if(p.type === "Projectile" && q.type === "Projectile"){
 						if(Player.list[p.parent] !== Player.list[q.parent]){
 							p.hp -= q.damage;
 							q.hp -= p.damage;
 						}
 					}
-					else if(q.type === "Weapon"){
+					else if(q.type === "Projectile"){
 						if(Player.list[q.parent] !== p){
 							p.hp -= q.damage;
 							q.hp -= p.damage;
 						}
 					}
-					else if(p.type === "Weapon"){
+					else if(p.type === "Projectile"){
 						if(Player.list[p.parent] !== q){
 							p.hp -= q.damage;
 							q.hp -= p.damage;
@@ -856,7 +735,7 @@ updateCrashes = function(){
 				}
 				if(q.hp <= 0){
 					if(q.type === "Shape"){
-						if(p.type === "Weapon"){
+						if(p.type === "Projectile"){
 							if(Player.list[p.parent]){
 								Player.list[p.parent].score += Math.round(q.score/2) + 1;
 								if(Math.random() < q.getPotionChance){
@@ -872,7 +751,7 @@ updateCrashes = function(){
 						}
 					}
 					else{
-						if(p.type === "Weapon"){
+						if(p.type === "Projectile"){
 							if(Player.list[p.parent]){
 								Player.list[p.parent].score += Math.round(q.score/2) + 1;
 							}
@@ -884,7 +763,7 @@ updateCrashes = function(){
 				}
 				if(p.hp <= 0){
 					if(p.type === "Shape"){
-						if(q.type === "Weapon"){
+						if(q.type === "Projectile"){
 							if(Player.list[q.parent]){
 								Player.list[q.parent].score += Math.round(p.score/2) + 1;
 								if(Math.random() < p.getPotionChance){
@@ -900,7 +779,7 @@ updateCrashes = function(){
 						}
 					}
 					else{
-						if(q.type === "Weapon"){
+						if(q.type === "Projectile"){
 							if(Player.list[q.parent]){
 								Player.list[q.parent].score += Math.round(p.score/2) + 1;
 							}
@@ -928,7 +807,7 @@ var mapCheck = function(param){
     for(i in Entity.list){
 		entity = Entity.list[i];
         if(entity.color !== param.color && entity.x > param.x && entity.x < param.x + param.width && entity.y > param.y && entity.y < param.y + param.height && entity.map === param.map){
-			if(entity.type === "Weapon"){
+			if(entity.type === "Projectile"){
 				entity.hp -= entity.pentration * 100;
 			}
 			else if(entity.type === "Shape"){
